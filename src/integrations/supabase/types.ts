@@ -14,13 +14,182 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      profiles: {
+        Row: {
+          created_at: string
+          display_name: string
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          display_name?: string
+          id: string
+        }
+        Update: {
+          created_at?: string
+          display_name?: string
+          id?: string
+        }
+        Relationships: []
+      }
+      questions: {
+        Row: {
+          complexity: string
+          created_at: string
+          description: string
+          difficulty: string
+          hints: Json
+          id: string
+          owner_id: string
+          starter_code: Json
+          test_cases: Json
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          complexity?: string
+          created_at?: string
+          description?: string
+          difficulty?: string
+          hints?: Json
+          id?: string
+          owner_id: string
+          starter_code?: Json
+          test_cases?: Json
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          complexity?: string
+          created_at?: string
+          description?: string
+          difficulty?: string
+          hints?: Json
+          id?: string
+          owner_id?: string
+          starter_code?: Json
+          test_cases?: Json
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      session_participants: {
+        Row: {
+          joined_at: string
+          role: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          joined_at?: string
+          role?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          joined_at?: string
+          role?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_participants_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sessions: {
+        Row: {
+          code: string
+          created_at: string
+          hints_visible: boolean
+          host_id: string
+          id: string
+          language: string
+          mode: string
+          question: Json
+          status: string
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          code?: string
+          created_at?: string
+          hints_visible?: boolean
+          host_id: string
+          id?: string
+          language?: string
+          mode?: string
+          question?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          hints_visible?: boolean
+          host_id?: string
+          id?: string
+          language?: string
+          mode?: string
+          question?: Json
+          status?: string
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      snapshots: {
+        Row: {
+          created_at: string
+          data: Json
+          id: string
+          owner_id: string
+          session_id: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          data: Json
+          id?: string
+          owner_id: string
+          session_id?: string | null
+          title?: string
+        }
+        Update: {
+          created_at?: string
+          data?: Json
+          id?: string
+          owner_id?: string
+          session_id?: string | null
+          title?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "snapshots_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      is_session_member: {
+        Args: { _session: string; _user: string }
+        Returns: boolean
+      }
+      join_session: { Args: { _session: string }; Returns: undefined }
     }
     Enums: {
       [_ in never]: never
