@@ -4,14 +4,15 @@ A practice and mock-interview app: problem on the left, code editor on the right
 
 ## Pages
 - **Landing** (`/`) — what it is, sign-in button.
-- **Sign in / Sign up** (`/auth`) — email + password and Google.
+- **Sign in / Sign up** (`/auth`) — email + password only.
 - **Dashboard** — your questions, your sessions, your snapshots; buttons "Practice solo" and "Start mock interview".
 - **Question editor** — write a question (title, description, examples, constraints, starter code, test cases) with AI help:
   1. Improve phrasing
   2. Reformat into classic interview style (Problem / Examples / Constraints)
-  3. Suggest time and space complexity
+  3. Bring in questions from LeetCode/HackerRank by pasting the problem text and parsing it
+  4. Suggest hints, including time and space complexity
 - **Session room** — split screen:
-  - Left: question, with a show/hide toggle for the complexity hint (host controls it; hidden from interviewee by default).
+  - Left: question, with a show/hide toggle for hints, including complexity hints when present (host controls it; hidden from interviewee by default).
   - Right: code editor with language picker (Python, JavaScript, Java, C++, Go...), Run button, output and test-case results panel.
   - Top bar: countdown (solo only, pick duration) or stopwatch (solo and mock), participant avatars, invite link, "Save snapshot", "End session".
 - **Snapshot viewer** — read-only view of a saved moment: question, code, language, output, timer value, participants, date. Cannot be edited.
