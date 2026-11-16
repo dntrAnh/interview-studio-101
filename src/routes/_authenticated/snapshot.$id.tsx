@@ -7,7 +7,7 @@ import { QuestionView } from "@/components/QuestionView";
 import { supabase } from "@/integrations/supabase/client";
 import { emptyQuestion, formatMs, type QuestionData, type RunResult } from "@/lib/types";
 import { getLanguage } from "@/lib/languages";
-import { OutputPanel } from "./session.$id";
+import { OutputPanel } from "@/components/OutputPanel";
 
 export const Route = createFileRoute("/_authenticated/snapshot/$id")({
   head: () => ({

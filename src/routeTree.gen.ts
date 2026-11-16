@@ -14,6 +14,8 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedQuestionsIdRouteImport } from './routes/_authenticated/questions.$id'
+import { Route as AuthenticatedSessionIdRouteImport } from './routes/_authenticated/session.$id'
+import { Route as AuthenticatedSnapshotIdRouteImport } from './routes/_authenticated/snapshot.$id'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,18 +42,32 @@ const AuthenticatedQuestionsIdRoute =
     path: '/questions/$id',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedSessionIdRoute = AuthenticatedSessionIdRouteImport.update({
+  id: '/session/$id',
+  path: '/session/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
+const AuthenticatedSnapshotIdRoute = AuthenticatedSnapshotIdRouteImport.update({
+  id: '/snapshot/$id',
+  path: '/snapshot/$id',
+  getParentRoute: () => AuthenticatedRouteRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/questions/$id': typeof AuthenticatedQuestionsIdRoute
+  '/session/$id': typeof AuthenticatedSessionIdRoute
+  '/snapshot/$id': typeof AuthenticatedSnapshotIdRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/auth': typeof AuthRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/questions/$id': typeof AuthenticatedQuestionsIdRoute
+  '/session/$id': typeof AuthenticatedSessionIdRoute
+  '/snapshot/$id': typeof AuthenticatedSnapshotIdRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -60,12 +76,26 @@ export interface FileRoutesById {
   '/auth': typeof AuthRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/questions/$id': typeof AuthenticatedQuestionsIdRoute
+  '/_authenticated/session/$id': typeof AuthenticatedSessionIdRoute
+  '/_authenticated/snapshot/$id': typeof AuthenticatedSnapshotIdRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/auth' | '/dashboard' | '/questions/$id'
+  fullPaths:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/questions/$id'
+    | '/session/$id'
+    | '/snapshot/$id'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/auth' | '/dashboard' | '/questions/$id'
+  to:
+    | '/'
+    | '/auth'
+    | '/dashboard'
+    | '/questions/$id'
+    | '/session/$id'
+    | '/snapshot/$id'
   id:
     | '__root__'
     | '/'
@@ -73,6 +103,8 @@ export interface FileRouteTypes {
     | '/auth'
     | '/_authenticated/dashboard'
     | '/_authenticated/questions/$id'
+    | '/_authenticated/session/$id'
+    | '/_authenticated/snapshot/$id'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -118,17 +150,35 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedQuestionsIdRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/session/$id': {
+      id: '/_authenticated/session/$id'
+      path: '/session/$id'
+      fullPath: '/session/$id'
+      preLoaderRoute: typeof AuthenticatedSessionIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/snapshot/$id': {
+      id: '/_authenticated/snapshot/$id'
+      path: '/snapshot/$id'
+      fullPath: '/snapshot/$id'
+      preLoaderRoute: typeof AuthenticatedSnapshotIdRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
   }
 }
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedQuestionsIdRoute: typeof AuthenticatedQuestionsIdRoute
+  AuthenticatedSessionIdRoute: typeof AuthenticatedSessionIdRoute
+  AuthenticatedSnapshotIdRoute: typeof AuthenticatedSnapshotIdRoute
 }
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedQuestionsIdRoute: AuthenticatedQuestionsIdRoute,
+  AuthenticatedSessionIdRoute: AuthenticatedSessionIdRoute,
+  AuthenticatedSnapshotIdRoute: AuthenticatedSnapshotIdRoute,
 }
 
 const AuthenticatedRouteRouteWithChildren =
