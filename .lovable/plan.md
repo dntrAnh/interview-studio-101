@@ -14,7 +14,7 @@ A practice and mock-interview app: problem on the left, code editor on the right
 - **Session room** — split screen:
   - Left: question, with a show/hide toggle for hints, including complexity hints when present (host controls it; hidden from interviewee by default).
   - Right: code editor with language picker (Python, JavaScript, Java, C++, Go...), Run button, output and test-case results panel.
-  - Top bar: countdown (solo only, pick duration) or stopwatch (solo and mock), participant avatars, invite link, "Save snapshot", "End session".
+  - Top bar: countdown (pick duration) or stopwatch, available in both solo and mock sessions, participant avatars, invite link, "Save snapshot", "End session".
 - **Snapshot viewer** — read-only view of a saved moment: question, code, language, output, timer value, participants, date. Cannot be edited.
 
 ## Collaboration
