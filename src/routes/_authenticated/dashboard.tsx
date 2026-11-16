@@ -77,7 +77,7 @@ function Dashboard() {
       .select("id")
       .single();
     setCreating(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     navigate({ to: "/session/$id", params: { id: data.id } });
   }
 

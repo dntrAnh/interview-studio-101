@@ -147,7 +147,7 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
         savedAt: new Date().toISOString(),
       },
     }).select("id").single();
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     toast.success("Snapshot saved", { action: { label: "View", onClick: () => navigate({ to: "/snapshot/$id", params: { id: data.id } }) } });
   }
 

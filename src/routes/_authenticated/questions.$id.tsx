@@ -66,11 +66,11 @@ function QuestionEditor() {
   const set = <K extends keyof QuestionData>(k: K, v: QuestionData[K]) => setQ((p) => ({ ...p, [k]: v }));
 
   async function runAssist(action: AssistAction) {
-    if (action !== "import" && !q.description.trim() && !q.title.trim()) return toast.error("Write something first.");
+    if (action !== "import" && !q.description.trim() && !q.title.trim()) { toast.error("Write something first."); return; }
     setBusy(action);
     try {
       const res = await assist({ data: { action, question: q, pasted } });
-      if (!res.ok) return toast.error(res.error);
+      if (!res.ok) { toast.error(res.error); return; }
       const p = res.patch;
       setQ((prev) => ({
         ...prev,
@@ -97,7 +97,7 @@ function QuestionEditor() {
       ? await supabase.from("questions").insert({ ...row, owner_id: user.id }).select("id").single()
       : await supabase.from("questions").update(row).eq("id", id).select("id").single();
     setBusy(null);
-    if (res.error) return toast.error(res.error.message);
+    if (res.error) { toast.error(res.error.message); return; }
     toast.success("Saved");
     qc.invalidateQueries({ queryKey: ["questions"] });
     if (isNew) navigate({ to: "/questions/$id", params: { id: res.data.id }, replace: true });
