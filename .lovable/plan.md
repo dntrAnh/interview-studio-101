@@ -31,7 +31,7 @@ A practice and mock-interview app: problem on the left, code editor on the right
 - Editor: Monaco loaded client-only.
 - Code execution: server function calling Judge0 (via RapidAPI or self-hosted) — needs an API key added as a secret; runs code against each question's test cases.
 - AI: Lovable AI Gateway server functions for phrasing, reformatting, and complexity suggestions.
-- Distinct dark "IDE" visual direction with monospace accents.
+- Distinct "IDE" visual direction with monospace accents, in both dark and light mode with a toggle (editor theme follows).
 
 ## Needs from you
 - A Judge0 API key (I'll prompt for it when we reach code running).
