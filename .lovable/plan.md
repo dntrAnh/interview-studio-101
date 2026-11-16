@@ -1,4 +1,4 @@
-# Mock Interview Coding Pad
+# Stuydo
 
 A practice and mock-interview app: problem on the left, code editor on the right, timers, live collaboration with friends, and frozen session snapshots.
 
