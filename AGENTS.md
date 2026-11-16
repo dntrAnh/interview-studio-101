@@ -28,3 +28,7 @@ use the editor.
   own key and store it in Secrets.
 - **Secrets.** Lovable manages them. Do not put secret values in the repo.
 <!-- LOVABLE:END -->
+
+- Live collaboration uses Yjs synced over Cloud Realtime broadcast (`src/lib/useRoom.ts`); there is no Yjs server, so peers answer `sync-req` and the DB `sessions.code` is only a seed/backup.
+- Code execution goes through the `runCode` server function to Judge0 (`JUDGE0_API_KEY`, optional `JUDGE0_URL`); tests are stdin→stdout pairs so every language works the same way.
+- Snapshots are insert-only rows (no update/delete grants) to keep them immutable.
