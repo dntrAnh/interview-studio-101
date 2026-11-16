@@ -183,8 +183,8 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
         </div>
       </AppHeader>
 
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
-        <ResizablePanel defaultSize={40} minSize={20}>
+      <ResizablePanelGroup orientation="horizontal" className="min-h-0 flex-1">
+        <ResizablePanel defaultSize="40%" minSize="20%">
           <div className="h-full space-y-6 overflow-y-auto p-6">
             <QuestionView q={question} />
             {hasHints && (
@@ -211,10 +211,9 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
-        <ResizablePanel defaultSize={60} minSize={30}>
-          <ResizablePanelGroup direction="vertical">
-            <ResizablePanel defaultSize={68} minSize={20}>
-              <div className="flex h-full flex-col">
+        <ResizablePanel defaultSize="60%" minSize="30%">
+          <div className="flex h-full flex-col">
+              <div className="flex min-h-0 flex-1 flex-col">
                 <div className="flex items-center gap-2 border-b bg-panel px-3 py-1.5">
                   <Select value={state.language} onValueChange={changeLanguage}>
                     <SelectTrigger className="h-8 w-40" aria-label="Language"><SelectValue /></SelectTrigger>
@@ -233,12 +232,10 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
                   )}
                 </div>
               </div>
-            </ResizablePanel>
-            <ResizableHandle withHandle />
-            <ResizablePanel defaultSize={32} minSize={10}>
-              <OutputPanel state={state} hasTests={question.test_cases.length > 0} stdin={stdin} setStdin={setStdin} />
-            </ResizablePanel>
-          </ResizablePanelGroup>
+              <div className="h-60 shrink-0 border-t">
+                <OutputPanel state={state} hasTests={question.test_cases.length > 0} stdin={stdin} setStdin={setStdin} />
+              </div>
+          </div>
         </ResizablePanel>
       </ResizablePanelGroup>
     </div>

@@ -18,7 +18,7 @@ export type Peer = { userId: string; name: string; role: string; color: string }
 const COLORS = ["#f59e0b", "#22c55e", "#38bdf8", "#f472b6", "#a3e635", "#fb923c"];
 const toB64 = (u: Uint8Array) => {
   let s = "";
-  for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]);
+  for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]!);
   return btoa(s);
 };
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
@@ -40,7 +40,7 @@ export function useRoom(opts: {
   const [ready, setReady] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const initialCodeRef = useRef(opts.initialCode);
-  const color = useMemo(() => COLORS[Math.abs(hash(me.id)) % COLORS.length], [me.id]);
+  const color = useMemo(() => COLORS[Math.abs(hash(me.id)) % COLORS.length]!, [me.id]);
 
   useEffect(() => {
     awareness.setLocalStateField("user", { name: me.name, color });
@@ -72,7 +72,7 @@ export function useRoom(opts: {
       })
       .on("presence", { event: "sync" }, () => {
         const ps = channel.presenceState<Peer>();
-        setPeers(Object.values(ps).map((arr) => arr[0]).filter(Boolean));
+        setPeers(Object.values(ps).map((arr) => arr[0]).filter((p): p is NonNullable<typeof p> => !!p));
       })
       .subscribe(async (status) => {
         if (status !== "SUBSCRIBED") return;

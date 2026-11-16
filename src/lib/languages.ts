@@ -15,5 +15,5 @@ export const LANGUAGES: { id: LanguageId; label: string; monaco: string; judge0:
 ];
 
 export function getLanguage(id: string) {
-  return LANGUAGES.find((l) => l.id === id) ?? LANGUAGES[0];
+  return LANGUAGES.find((l) => l.id === id) ?? LANGUAGES[0]!;
 }
