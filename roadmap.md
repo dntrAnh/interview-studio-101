@@ -9,3 +9,4 @@
 - [x] Sessions: host archive/restore and delete with confirmation
 - [x] Freeform: code-style question text, Markdown, optional AI reformat
 - [x] Starter code: common standard imports, including Python sys, with runnable stdin scaffold
+- [x] Questions: delete saved questions with confirmation and verify removal

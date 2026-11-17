@@ -30,6 +30,7 @@ function Dashboard() {
   const { user } = Route.useRouteContext();
   const [startMode, setStartMode] = useState<"solo" | "mock" | null>(null);
   const [showArchived, setShowArchived] = useState(false);
+  const [deletingQuestion, setDeletingQuestion] = useState<string | null>(null);
 
   const questions = useQuery({
     queryKey: ["questions"],
@@ -55,6 +56,22 @@ function Dashboard() {
       return data;
     },
   });
+
+  async function deleteQuestion(id: string, title: string) {
+    if (deletingQuestion || !confirm(`Delete “${title}” permanently from your question bank?`)) return;
+    setDeletingQuestion(id);
+    try {
+      const { data, error } = await supabase.from("questions").delete().eq("id", id).eq("owner_id", user.id).select("id");
+      if (error) throw error;
+      if (!data?.length) throw new Error("This question could not be deleted. Refresh and try again.");
+      await questions.refetch();
+      toast.success("Question deleted");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Could not delete the question. Please try again.");
+    } finally {
+      setDeletingQuestion(null);
+    }
+  }
 
   async function manageSession(id: string, action: "archive" | "restore" | "delete") {
     if (!canManageRoom(sessions.data?.some(s => s.id === id && s.host_id === user.id) ?? false)) return;
@@ -90,13 +107,16 @@ function Dashboard() {
           {questions.data?.length === 0 && <Empty text="No questions yet. Write one or paste one from LeetCode." />}
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
             {questions.data?.map((q) => (
-              <Link key={q.id} to="/questions/$id" params={{ id: q.id }} className="rounded-lg border bg-card p-4 transition-colors hover:border-primary">
+              <div key={q.id} className="flex items-center rounded-lg border bg-card transition-colors hover:border-primary">
+                <Link to="/questions/$id" params={{ id: q.id }} className="min-w-0 flex-1 p-4">
                 <div className="flex items-center gap-2">
                   <FileCode2 className="h-4 w-4 text-primary" />
                   <span className="truncate font-medium">{q.title}</span>
                 </div>
                 <p className="mt-1 font-mono text-xs text-muted-foreground">{q.difficulty} · {(q.test_cases as unknown[]).length} tests</p>
-              </Link>
+                </Link>
+                <Button variant="ghost" size="icon" className="mr-2 shrink-0" title="Delete question" aria-label={`Delete question: ${q.title}`} disabled={deletingQuestion !== null} onClick={() => deleteQuestion(q.id, q.title)}><Trash2 /></Button>
+              </div>
             ))}
           </div>
         </section>
