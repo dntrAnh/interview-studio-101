@@ -50,7 +50,15 @@ export const assistQuestion = createServerFn({ method: "POST" })
       }
       const parsed = questionPatchSchema.safeParse(JSON.parse(text || "{}"));
       if (!parsed.success || (data.action === "import" && !parsed.data.description?.trim())) return { ok: false as const, error: "AI did not return a complete question. Your pasted text is preserved; please try again." };
-      return { ok: true as const, patch: parsed.data };
+      const patch: Partial<QuestionData> = {
+        ...(parsed.data.title !== undefined ? { title: parsed.data.title } : {}),
+        ...(parsed.data.difficulty !== undefined ? { difficulty: parsed.data.difficulty } : {}),
+        ...(parsed.data.description !== undefined ? { description: parsed.data.description } : {}),
+        ...(parsed.data.hints !== undefined ? { hints: parsed.data.hints } : {}),
+        ...(parsed.data.complexity !== undefined ? { complexity: parsed.data.complexity } : {}),
+        ...(parsed.data.test_cases !== undefined ? { test_cases: parsed.data.test_cases } : {}),
+      };
+      return { ok: true as const, patch };
     } catch (err) {
       if (err instanceof GatewayError) {
         const msg =

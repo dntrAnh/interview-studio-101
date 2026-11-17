@@ -64,7 +64,7 @@ function SessionPage() {
     else await session.refetch();
     setJoining(false);
   }
-  if (!session.data?.session || (session.data.session.host_id !== user.id && !session.data.role))
+  if (!session.data?.session || (session.data.session.host_id !== user.id && !session.data.role && session.data.session.status === "active"))
     return (
       <div className="grid min-h-screen place-items-center text-center">
         <div className="space-y-4"><h1 className="font-display text-xl">Join mock interview</h1>
@@ -85,7 +85,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
-  const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : guestRole ?? "interviewee";
+  const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : guestRole ?? "spectator";
   const spectator = !canEditRoom(role);
   const initial: SharedState = {
     language: s.language,
