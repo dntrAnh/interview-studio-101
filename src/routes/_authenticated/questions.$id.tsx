@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardPaste, Lightbulb, LayoutList, Plus, Sparkles, Trash2, Wand2 } from "lucide-react";
+import { ClipboardPaste, Lightbulb, LayoutList, Plus, Sparkles, Trash2, Wand2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -16,6 +16,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { assistQuestion, type AssistAction } from "@/lib/ai.functions";
 import { emptyQuestion, type QuestionData } from "@/lib/types";
 import { LANGUAGES } from "@/lib/languages";
+import { StartSessionDialog } from "@/components/StartSessionDialog";
 
 export const Route = createFileRoute("/_authenticated/questions/$id")({
   head: () => ({
@@ -43,6 +44,7 @@ function QuestionEditor() {
   const [pasteOpen, setPasteOpen] = useState(false);
   const [pasted, setPasted] = useState("");
   const [starterLang, setStarterLang] = useState("python");
+  const [startMode, setStartMode] = useState<"solo" | "mock" | null>(null);
 
   const existing = useQuery({
     queryKey: ["question", id],
@@ -115,6 +117,8 @@ function QuestionEditor() {
       <AppHeader>
         <span className="font-mono text-sm text-muted-foreground">/ {isNew ? "new question" : "edit question"}</span>
         <div className="ml-auto flex gap-2">
+          <Button size="sm" variant="outline" onClick={() => setStartMode("solo")}><Play />Practice now</Button>
+          <Button size="sm" variant="outline" onClick={() => setStartMode("mock")}>Mock interview</Button>
           {!isNew && <Button variant="ghost" size="sm" onClick={remove}><Trash2 /> Delete</Button>}
           <Button size="sm" onClick={save} disabled={busy === "save"}>{busy === "save" ? "Saving…" : "Save"}</Button>
         </div>
@@ -188,6 +192,7 @@ function QuestionEditor() {
         </div>
       </div>
 
+      {startMode && <StartSessionDialog mode={startMode} onClose={() => setStartMode(null)} userId={user.id} questions={[]} initialQuestion={q} />}
       <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
         <DialogContent className="max-w-2xl">
           <DialogHeader><DialogTitle>Import a problem</DialogTitle></DialogHeader>

@@ -30,5 +30,8 @@ use the editor.
 <!-- LOVABLE:END -->
 
 - Live collaboration uses Yjs synced over Cloud Realtime broadcast (`src/lib/useRoom.ts`); there is no Yjs server, so peers answer `sync-req` and the DB `sessions.code` is only a seed/backup.
-- Code execution goes through the `runCode` server function to Judge0 (`JUDGE0_API_KEY`, optional `JUDGE0_URL`); tests are stdin→stdout pairs so every language works the same way.
+- Code execution uses authenticated `runCode` with direct Judge0 CE by default, sequential paced submissions and optional configured/RapidAPI fallback; stdin→stdout pairs keep languages consistent.
 - Snapshots are insert-only rows (no update/delete grants) to keep them immutable.
+- Root session context derives from the persisted auth session and the single root identity listener; cached route access is only a UI gate, while server middleware and RLS validate access.
+- Room launches share StartSessionDialog so dashboard imports and question-editor launches use the same save/create flow.
+- Guest roles and seat limits are assigned atomically by join_session_as under a room row lock; spectators are read-only and only hosts manage session lifecycle.

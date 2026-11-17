@@ -2,14 +2,15 @@ import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
-import { Camera, FileCode2, Plus, Timer, Users } from "lucide-react";
+import { Archive, ArchiveRestore, Trash2, Camera, FileCode2, Plus, Timer, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
-import { emptyQuestion, type QuestionData } from "@/lib/types";
+import { type QuestionData } from "@/lib/types";
+import { StartSessionDialog } from "@/components/StartSessionDialog";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -31,8 +32,7 @@ function Dashboard() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const [startMode, setStartMode] = useState<"solo" | "mock" | null>(null);
-  const [questionId, setQuestionId] = useState<string>("blank");
-  const [creating, setCreating] = useState(false);
+  const [showArchived, setShowArchived] = useState(false);
 
   const questions = useQuery({
     queryKey: ["questions"],
@@ -59,26 +59,14 @@ function Dashboard() {
     },
   });
 
-  async function startSession() {
-    if (!startMode) return;
-    setCreating(true);
-    const q = questions.data?.find((x) => x.id === questionId);
-    const question: QuestionData = q
-      ? {
-          title: q.title, difficulty: q.difficulty, description: q.description,
-          hints: (q.hints as string[]) ?? [], complexity: q.complexity,
-          starter_code: (q.starter_code as Record<string, string>) ?? {},
-          test_cases: (q.test_cases as QuestionData["test_cases"]) ?? [],
-        }
-      : { ...emptyQuestion(), title: "Freeform session" };
-    const { data, error } = await supabase
-      .from("sessions")
-      .insert({ host_id: user.id, mode: startMode, title: question.title, question, code: question.starter_code["python"] ?? "" })
-      .select("id")
-      .single();
-    setCreating(false);
-    if (error) { toast.error(error.message); return; }
-    navigate({ to: "/session/$id", params: { id: data.id } });
+  async function manageSession(id: string, action: "archive" | "restore" | "delete") {
+    if (action === "delete" && !confirm("Delete this session permanently? Saved snapshots will remain.")) return;
+    const result = action === "delete"
+      ? await supabase.from("sessions").delete().eq("id", id).eq("host_id", user.id)
+      : await supabase.from("sessions").update({ status: action === "archive" ? "archived" : "ended" }).eq("id", id).eq("host_id", user.id);
+    if (result.error) { toast.error(result.error.message); return; }
+    await sessions.refetch();
+    toast.success(action === "delete" ? "Session deleted" : action === "archive" ? "Session archived" : "Session restored");
   }
 
   return (
@@ -117,16 +105,17 @@ function Dashboard() {
 
         <div className="grid gap-10 lg:grid-cols-2">
           <section>
-            <h2 className="mb-3 font-display text-lg font-semibold">Sessions</h2>
+            <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-lg font-semibold">Sessions</h2><Button size="sm" variant="ghost" onClick={() => setShowArchived(!showArchived)}><Archive />{showArchived ? "Show recent" : "Archived"}</Button></div>
             {sessions.data?.length === 0 && <Empty text="No sessions yet." />}
             <ul className="divide-y rounded-lg border bg-card">
-              {sessions.data?.map((s) => (
-                <li key={s.id}>
-                  <Link to="/session/$id" params={{ id: s.id }} className="flex items-center gap-3 px-4 py-3 hover:bg-muted">
+              {sessions.data?.filter(s => (s.status === "archived") === showArchived).map((s) => (
+                <li key={s.id} className="flex items-center">
+                  <Link to="/session/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-muted">
                     {s.mode === "mock" ? <Users className="h-4 w-4 text-accent" /> : <Timer className="h-4 w-4 text-primary" />}
                     <span className="flex-1 truncate">{s.title || "Untitled"}</span>
                     <span className="font-mono text-xs text-muted-foreground">{s.host_id === user.id ? "host" : "guest"} · {fmtDate(s.created_at)}</span>
                   </Link>
+                  {s.host_id === user.id && <div className="flex shrink-0 pr-2"><Button variant="ghost" size="icon" title={showArchived ? "Restore session" : "Archive session"} aria-label={showArchived ? "Restore session" : "Archive session"} onClick={() => manageSession(s.id, showArchived ? "restore" : "archive")}>{showArchived ? <ArchiveRestore /> : <Archive />}</Button><Button variant="ghost" size="icon" title="Delete session" aria-label="Delete session" onClick={() => manageSession(s.id, "delete")}><Trash2 /></Button></div>}
                 </li>
               ))}
             </ul>
@@ -149,25 +138,7 @@ function Dashboard() {
         </div>
       </main>
 
-      <Dialog open={startMode !== null} onOpenChange={(o) => !o && setStartMode(null)}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{startMode === "mock" ? "Start a mock interview" : "Practice solo"}</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-2">
-            <Label>Question</Label>
-            <Select value={questionId} onValueChange={setQuestionId}>
-              <SelectTrigger><SelectValue /></SelectTrigger>
-              <SelectContent>
-                <SelectItem value="blank">No question (freeform)</SelectItem>
-                {questions.data?.map((q) => <SelectItem key={q.id} value={q.id}>{q.title}</SelectItem>)}
-              </SelectContent>
-            </Select>
-            {startMode === "mock" && <p className="text-sm text-muted-foreground">You'll be the interviewer. Share the room link so a friend can join.</p>}
-          </div>
-          <Button onClick={startSession} disabled={creating}>{creating ? "Creating…" : "Open room"}</Button>
-        </DialogContent>
-      </Dialog>
+      {startMode && <StartSessionDialog mode={startMode} onClose={() => setStartMode(null)} userId={user.id} questions={(questions.data ?? []).map(q => ({ id: q.id, question: { title: q.title, difficulty: q.difficulty, description: q.description, hints: q.hints as string[], complexity: q.complexity, starter_code: q.starter_code as Record<string, string>, test_cases: q.test_cases as QuestionData["test_cases"] } }))} />}
     </div>
   );
 }

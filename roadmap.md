@@ -6,3 +6,4 @@
 - [ ] Sign-in: persisted session navigation, smart logo and auth forwarding
 - [ ] Verify saved questions, both room modes and code execution
 - [ ] Invite joining: choose interviewee (maximum 1) or spectator (maximum 5), enforced safely
+- [ ] Sessions: host archive/restore and delete with confirmation
