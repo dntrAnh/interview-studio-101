@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, Eye, EyeOff, Link2, LogOut, Play, Lightbulb, Sparkles } from "lucide-react";
+import { Camera, Eye, EyeOff, Link2, Play, Lightbulb, Sparkles, Send } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -23,6 +23,9 @@ import { useIsDark } from "@/lib/theme";
 import { GUEST_SEATS, canEditRoom } from "@/lib/room-access";
 import { InterviewFeedback } from "@/components/InterviewFeedback";
 import { canPostFeedback } from "@/lib/interview-feedback";
+import { SubmissionTests } from "@/components/SubmissionTests";
+import { savedSubmissionSchema } from "@/lib/submission";
+import type { TestCase } from "@/lib/types";
 
 const CollabEditor = lazy(() => import("@/components/CollabEditor"));
 
@@ -85,14 +88,16 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
+  const saved = savedSubmissionSchema.safeParse(s.last_submission);
+  const [addedTests, setAddedTests] = useState<TestCase[]>(saved.success ? saved.data.addedTests : []);
   const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : guestRole ?? "spectator";
   const spectator = !canEditRoom(role);
   const initial: SharedState = {
     language: s.language,
     hintsVisible: s.hints_visible,
     timer: { kind: s.mode === "solo" ? "countdown" : "stopwatch", running: false, startedAt: null, accumulatedMs: 0, durationMs: 45 * 60000 },
-    results: null,
-    runError: null,
+    results: saved.success ? saved.data.results : null,
+    runError: saved.success ? saved.data.error : null,
   };
   const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, initialCode: s.code || question.starter_code[s.language] || getLanguage(s.language).starter });
   const { state, setState, ytext } = room;
@@ -109,7 +114,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     if (!code.trim()) { toast.error("Write some code first."); return; }
     setReviewOpen(true); setReviewing(true); setReviewResult(null);
     try {
-      const res = await review({ data: { question, code, language: getLanguage(state.language).label } });
+      const res = await review({ data: { question: { ...question, test_cases: [...question.test_cases, ...addedTests] }, code, language: getLanguage(state.language).label } });
       if (res.ok) setReviewResult(res.review);
       else { toast.error(res.error); setReviewOpen(false); }
     } catch {
@@ -149,11 +154,18 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     setState({ language: lang });
   }
 
-  async function onRun() {
+  async function onRun(submit = false) {
     setRunning(true);
     try {
-      const res = await run({ data: { language: state.language, code: ytext.toString(), tests: question.test_cases, customInput: stdin } });
+      const code = ytext.toString();
+      const tests = submit ? [...question.test_cases, ...addedTests] : question.test_cases;
+      const res = await run({ data: { language: state.language, code, tests, customInput: stdin } });
       setState({ results: res.results, runError: res.error });
+      if (submit) {
+        const { error } = await supabase.from("sessions").update({ code, language: state.language, last_submission: { code, language: state.language, addedTests, results: res.results, error: res.error, submittedAt: new Date().toISOString() } }).eq("id", s.id);
+        if (error) toast.error("Tests ran, but the submission could not be saved.");
+        else toast.success(res.error ? "Submission saved with runner error" : "Submission saved");
+      }
     } catch {
       setState({ runError: "Could not run the code.", results: null });
     } finally {
@@ -255,6 +267,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
               </div>
             )}
             {s.mode === "mock" && <InterviewFeedback sessionId={s.id} userId={userId} canPost={canPostFeedback(s.mode, isHost)} />}
+            <SubmissionTests tests={addedTests} onChange={setAddedTests} disabled={spectator || running} />
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -268,7 +281,8 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                   </Select>
                   <span className="font-mono text-xs text-muted-foreground">{room.ready ? "● live" : "connecting…"}</span>
                   <Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing || spectator}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
-                  <Button size="sm" onClick={onRun} disabled={running || spectator}><Play /> {running ? "Running…" : question.test_cases.length ? "Run tests" : "Run"}</Button>
+                  <Button size="sm" variant="outline" onClick={() => onRun(true)} disabled={running || spectator}><Send /> Submit</Button>
+                  <Button size="sm" onClick={() => onRun()} disabled={running || spectator}><Play /> {running ? "Running…" : question.test_cases.length ? "Run tests" : "Run"}</Button>
                 </div>
                 <div className="min-h-0 flex-1">
                   {room.ready ? (
@@ -281,7 +295,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                 </div>
               </div>
               <div className="h-60 shrink-0 border-t">
-                <OutputPanel state={state} hasTests={question.test_cases.length > 0} stdin={stdin} setStdin={setStdin} />
+                <OutputPanel state={state} hasTests={question.test_cases.length + addedTests.length > 0} stdin={stdin} setStdin={setStdin} />
               </div>
           </div>
         </ResizablePanel>
