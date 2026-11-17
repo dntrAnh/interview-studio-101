@@ -62,3 +62,64 @@ export const assistQuestion = createServerFn({ method: "POST" })
       throw err;
     }
   });
+
+export type CodeReview = {
+  verdict: "correct" | "partially_correct" | "incorrect";
+  correctness: string;
+  time_complexity: string;
+  space_complexity: string;
+  edge_cases: string[];
+  suggestions: string[];
+};
+
+export const reviewSubmission = createServerFn({ method: "POST" })
+  .middleware([requireSupabaseAuth])
+  .inputValidator((input: { question: QuestionData; code: string; language: string }) => {
+    if (typeof input.code !== "string" || !input.code.trim()) throw new Error("No code to review");
+    return input;
+  })
+  .handler(async ({ data }) => {
+    const { generateResponse, GatewayError } = await import("@lovable.dev/ai-gateway");
+    const q = data.question;
+    try {
+      const res = await generateResponse({
+        model: "openai/gpt-6-astra",
+        instructions:
+          "You are a senior technical interviewer reviewing a candidate's solution. Be precise and fair. Return JSON with keys: verdict ('correct' | 'partially_correct' | 'incorrect'), correctness (short paragraph explaining whether and why the solution is correct), time_complexity (Big-O with one-line justification), space_complexity (Big-O with one-line justification), edge_cases (array of edge cases the code misses or mishandles; empty if none), suggestions (array of concise improvements). Never rewrite the full solution.",
+        input: [
+          {
+            role: "user",
+            content: `Question: ${q.title}\n\n${q.description}`.slice(0, 15000) +
+              `\n\nLanguage: ${data.language}\n\nCandidate code:\n${data.code.slice(0, 20000)}\n\nReturn JSON only.`,
+          },
+        ],
+        text: { format: { type: "json_object" } },
+      });
+      let text = "";
+      for (const item of res.output ?? []) {
+        if (item.type === "message") for (const c of item.content) if (c.type === "output_text") text += c.text;
+      }
+      const r = JSON.parse(text || "{}") as Partial<CodeReview>;
+      const review: CodeReview = {
+        verdict: r.verdict === "correct" || r.verdict === "incorrect" ? r.verdict : "partially_correct",
+        correctness: String(r.correctness ?? ""),
+        time_complexity: String(r.time_complexity ?? "—"),
+        space_complexity: String(r.space_complexity ?? "—"),
+        edge_cases: Array.isArray(r.edge_cases) ? r.edge_cases.map(String) : [],
+        suggestions: Array.isArray(r.suggestions) ? r.suggestions.map(String) : [],
+      };
+      return { ok: true as const, review };
+    } catch (err) {
+      if (err instanceof GatewayError) {
+        const msg =
+          err.code === "payment_required"
+            ? "AI credits are used up for this workspace."
+            : err.httpStatus === 429
+              ? "AI is busy right now, try again in a moment."
+              : "The AI reviewer could not answer. Please try again.";
+        return { ok: false as const, error: msg };
+      }
+      if (err instanceof SyntaxError) return { ok: false as const, error: "AI returned an unreadable answer. Try again." };
+      throw err;
+    }
+  });
