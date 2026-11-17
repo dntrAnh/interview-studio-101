@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import * as monaco from "monaco-editor";
-import editorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker?worker";
+import editorWorker from "monaco-editor/esm/vs/editor/editor.worker.js?worker";
+import tsWorker from "monaco-editor/esm/vs/language/typescript/ts.worker.js?worker";
 import Editor, { loader } from "@monaco-editor/react";
 import { MonacoBinding } from "y-monaco";
 import type * as Y from "yjs";
