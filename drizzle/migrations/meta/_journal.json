@@ -57,6 +57,13 @@
       "when": 1794878205317,
       "tag": "0007_closed_mock_guest_read_only",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1794878292089,
+      "tag": "0008_persist_room_countdown",
+      "breakpoints": true
     }
   ]
 }

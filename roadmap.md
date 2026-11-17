@@ -4,6 +4,7 @@
 - [ ] Mock rooms: shared countdown with saved timer state
 - [ ] Parser: dynamic programming and greedy scaffolds with executable sample tests
 - [ ] Mock Run: verify real Judge0 execution and visible output
+- [ ] Dashboard: separate Solo practice and Mock interviews into two columns
 - [x] Build Interview Studio (auth, dashboard, question editor + AI, room, timers, snapshots)
 - [x] Homepage: replace hero/features with a plain "How it works"
 - [x] Runner: direct CE default, sequential paced execution, graceful fallback and clear errors
