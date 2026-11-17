@@ -1,8 +1,9 @@
 import { Link, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import type { ReactNode } from "react";
-import { LogOut } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuItem } from "@/components/ui/dropdown-menu";
 import { ThemeToggle } from "@/lib/theme";
 import { supabase } from "@/integrations/supabase/client";
 import { useSessionUser } from "@/lib/session-context";
@@ -17,7 +18,7 @@ export function Logo() {
   );
 }
 
-export function AppHeader({ children, signedIn = true }: { children?: ReactNode; signedIn?: boolean }) {
+export function AppHeader({ children }: { children?: ReactNode; signedIn?: boolean }) {
   const user = useSessionUser();
   const qc = useQueryClient();
   const navigate = useNavigate();
@@ -33,11 +34,14 @@ export function AppHeader({ children, signedIn = true }: { children?: ReactNode;
       <Logo />
       <div className="flex flex-1 items-center gap-2 overflow-x-auto">{children}</div>
       <ThemeToggle />
-      {(signedIn || user) && (
-        <Button variant="ghost" size="sm" className="shrink-0 border-l" title="Sign out of your account" aria-label="Sign out" onClick={signOut}>
-          <LogOut /> Sign out
-        </Button>
-      )}
+      {user && <DropdownMenu>
+        <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="shrink-0" title="Profile" aria-label="Profile"><UserRound /></Button></DropdownMenuTrigger>
+        <DropdownMenuContent align="end" className="w-56">
+          <DropdownMenuLabel className="break-all">{user.user_metadata?.['display_name'] || "My account"}</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onSelect={() => { void signOut(); }}><LogOut className="mr-2 h-4 w-4" />Sign out</DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>}
     </header>
   );
 }
