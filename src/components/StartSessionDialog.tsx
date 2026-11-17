@@ -18,6 +18,7 @@ import { emptyQuestion, type QuestionData } from "@/lib/types";
 import { importedQuestion } from "@/lib/question-patch";
 import { Input } from "@/components/ui/input";
 import { useIsDark } from "@/lib/theme";
+import { interviewName } from "@/lib/room-settings";
 const QuestionTextEditor = lazy(() => import("./CollabEditor").then(m => ({ default: m.QuestionTextEditor })));
 
 export function StartSessionDialog({ mode, onClose, userId, questions, initialQuestion }: {
@@ -29,6 +30,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
   const assist = useServerFn(assistQuestion);
   const dark = useIsDark();
   const [source, setSource] = useState("bank");
+  const [roomName, setRoomName] = useState("");
   const [questionId, setQuestionId] = useState("blank");
   const [pasted, setPasted] = useState("");
   const [freeText, setFreeText] = useState("");
@@ -61,7 +63,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
         setSavedId(data.id);
         await qc.invalidateQueries({ queryKey: ["questions"] });
       }
-      const { data, error } = await supabase.from("sessions").insert({ host_id: userId, mode, title: question.title, question, code: mode === "mock" ? "import sys\n\n" : question.starter_code["python"] ?? "" }).select("id").single();
+      const { data, error } = await supabase.from("sessions").insert({ host_id: userId, mode, title: mode === "mock" ? interviewName(roomName, question.title) : question.title, question, code: mode === "mock" ? "import sys\n\n" : question.starter_code["python"] ?? "" }).select("id").single();
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["sessions"] });
       onClose();
@@ -73,6 +75,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
     <DialogContent className="flex max-h-[90dvh] w-[calc(100%-2rem)] min-w-0 flex-col overflow-hidden p-0 sm:max-w-2xl">
       <DialogHeader className="shrink-0 border-b px-6 py-5 pr-12"><DialogTitle>{mode === "solo" ? "Practice solo" : "Start a mock interview"}</DialogTitle></DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
+      {mode === "mock" && <div className="space-y-2 py-4"><Label htmlFor="interview-name">Interview name</Label><Input id="interview-name" value={roomName} onChange={e => setRoomName(e.target.value)} maxLength={120} placeholder="Mock interview" /></div>}
       {initialQuestion ? <QuestionView q={initialQuestion} /> : <Tabs value={source} onValueChange={v => { setSource(v); setParsed(null); setSavedId(null); }}>
         <TabsList className="flex h-auto w-full flex-wrap"><TabsTrigger value="bank">Question bank</TabsTrigger><TabsTrigger value="free">Freeform</TabsTrigger><TabsTrigger value="paste"><ClipboardPaste /> Paste & AI</TabsTrigger></TabsList>
         <TabsContent value="bank" className="space-y-2">

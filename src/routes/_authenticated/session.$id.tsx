@@ -3,7 +3,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, Eye, EyeOff, Link2, Play, Lightbulb, Sparkles, Send } from "lucide-react";
+import { Camera, Eye, EyeOff, Link2, Play, Lightbulb, Sparkles, Send, Pencil } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "@/components/ui/resizable";
@@ -26,6 +27,7 @@ import { canPostFeedback } from "@/lib/interview-feedback";
 import { SubmissionTests } from "@/components/SubmissionTests";
 import { savedSubmissionSchema } from "@/lib/submission";
 import type { TestCase } from "@/lib/types";
+import { initialRoomTimer, interviewName } from "@/lib/room-settings";
 
 const CollabEditor = lazy(() => import("@/components/CollabEditor"));
 
@@ -89,6 +91,8 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const dark = useIsDark();
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
+  const [renaming, setRenaming] = useState(false);
+  const [name, setName] = useState(s.title);
   const pastRoom = isPastGuestRoom(s.mode, s.status, isHost);
   const runOnly = roomExecutionMode(s.mode) === "run-only";
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
@@ -99,12 +103,20 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const initial: SharedState = {
     language: s.language,
     hintsVisible: s.hints_visible,
-    timer: { kind: s.mode === "solo" ? "countdown" : "stopwatch", running: false, startedAt: null, accumulatedMs: 0, durationMs: 45 * 60000 },
+    timer: initialRoomTimer(s.timer_state),
     results: saved.success ? saved.data.results : null,
     runError: saved.success ? saved.data.error : null,
   };
   const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, pastRoom, initialCode: pastRoom ? s.code : s.code || (runOnly ? s.language === "python" ? "import sys\n\n" : "\n" : question.starter_code[s.language] || getLanguage(s.language).starter) });
   const { state, setState, ytext } = room;
+  async function rename() {
+    const title = interviewName(name, question.title);
+    const { error } = await supabase.from("sessions").update({ title }).eq("id", s.id).eq("host_id", userId);
+    if (error) { toast.error("Could not save the interview name."); return; }
+    setName(title); setRenaming(false);
+    await qc.invalidateQueries({ queryKey: ["sessions"] });
+    await qc.invalidateQueries({ queryKey: ["session", s.id] });
+  }
   const [running, setRunning] = useState(false);
   const [stdin, setStdin] = useState("");
   const [showHints, setShowHints] = useState(false);
@@ -149,6 +161,12 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     if (!room.ready || spectator) return;
     supabase.from("sessions").update({ language: state.language, hints_visible: state.hintsVisible }).eq("id", s.id).then();
   }, [state.language, state.hintsVisible, room.ready, s.id, spectator]);
+  useEffect(() => {
+    if (!room.ready || spectator) return;
+    void supabase.from("sessions").update({ timer_state: state.timer }).eq("id", s.id).then(({ error }) => {
+      if (error) toast.error("Could not save the timer.");
+    });
+  }, [state.timer, room.ready, s.id, spectator]);
 
   function changeLanguage(lang: string) {
     if (spectator) return;
@@ -231,10 +249,11 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   return (
     <div className="flex h-screen flex-col bg-background">
       <AppHeader>
-        <span className="truncate font-mono text-sm text-muted-foreground">/ {question.title || "session"}</span>
+        {renaming ? <form className="flex min-w-0 items-center gap-1" onSubmit={e => { e.preventDefault(); void rename(); }}><Input aria-label="Interview name" className="h-8 w-40" maxLength={120} value={name} onChange={e => setName(e.target.value)} /><Button size="sm" type="submit">Save</Button><Button size="sm" variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button></form> : <span className="truncate font-mono text-sm text-muted-foreground">/ {s.title || question.title || "session"}</span>}
+        {s.mode === "mock" && isHost && !renaming && <Button size="icon" variant="ghost" title="Rename interview" aria-label="Rename interview" onClick={() => setRenaming(true)}><Pencil /></Button>}
         <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{role}</span>
         <div className="ml-auto flex items-center gap-2">
-          <div className={spectator ? "pointer-events-none" : ""}><TimerControl timer={state.timer} onChange={(timer) => { if (!spectator) setState({ timer }); }} /></div>
+          <TimerControl disabled={spectator} timer={state.timer} onChange={(timer) => { if (!spectator) setState({ timer }); }} />
           <div className="flex -space-x-2">
             {room.peers.map((p) => (
               <span key={p.userId} title={`${p.name} (${p.role})`} className="grid h-7 w-7 place-items-center rounded-full border-2 border-panel bg-secondary font-mono text-xs font-bold" style={{ color: p.color }}>
@@ -306,7 +325,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                 </div>
               </div>
               <div className="h-60 shrink-0 border-t">
-                <OutputPanel state={state} hasTests={!runOnly && question.test_cases.length + addedTests.length > 0} stdin={stdin} setStdin={setStdin} />
+                <OutputPanel state={state} hasTests={!runOnly && question.test_cases.length + addedTests.length > 0} stdin={stdin} setStdin={spectator ? undefined : setStdin} />
               </div>
           </div>
         </ResizablePanel>
