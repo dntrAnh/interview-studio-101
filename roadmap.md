@@ -19,3 +19,5 @@
 - [x] Submit: run added edge-case tests without requesting AI review
 - [x] Snapshots: allow owner deletion with confirmation
 - [x] Runner: direct Judge0 CE without RapidAPI and verify clear errors
+- [ ] Parsing: parameterized Python starter function and matching stdin/output wrapper
+- [ ] Mock rooms: whiteboard-style code with Run only, no submissions or AI reviews
