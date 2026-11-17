@@ -14,3 +14,4 @@
 - [ ] Mock sessions: reopen joined and hosted rooms from session list
 - [ ] AI review: validate real Gateway review responses and verify submission
 - [ ] Parser: preserve platform formats and generate honest edge-case tests
+- [ ] End session: keep sign-in and return safely to dashboard
