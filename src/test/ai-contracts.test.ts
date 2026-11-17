@@ -5,7 +5,8 @@ import { importedQuestion } from "@/lib/question-patch";
 describe("AI result validation", () => {
   it("preserves parameterized starter functions through parsing and question normalization", () => {
     const python = "import sys\n\ndef twoSum(nums, target):\n    # TODO\n    return []\n";
-    expect(importedQuestion(questionPatchSchema.parse({ starter_code: { python } })).starter_code.python).toBe(python);
+    const parsed = questionPatchSchema.parse({ starter_code: { python } });
+    expect(importedQuestion({ starter_code: parsed.starter_code ?? {} }).starter_code["python"]).toBe(python);
   });
   it("rejects empty placeholder reviews", () => expect(codeReviewSchema.safeParse({}).success).toBe(false));
   it("accepts a complete review with actual complexity and edge cases", () => {
