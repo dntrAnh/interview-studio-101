@@ -185,11 +185,19 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      can_edit_session: {
+        Args: { _session: string; _user: string }
+        Returns: boolean
+      }
       is_session_member: {
         Args: { _session: string; _user: string }
         Returns: boolean
       }
       join_session: { Args: { _session: string }; Returns: undefined }
+      join_session_as: {
+        Args: { _role: string; _session: string }
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
