@@ -248,7 +248,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   return (
     <div className="flex h-screen flex-col bg-background">
       <AppHeader>
-        {renaming ? <form className="flex shrink-0 items-center gap-1" onSubmit={e => { e.preventDefault(); void rename(); }}><Input aria-label="Interview name" className="h-8 w-40" maxLength={120} value={name} onChange={e => setName(e.target.value)} /><Button size="sm" type="submit">Save</Button><Button size="sm" variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button></form> : <span className="truncate font-mono text-sm text-muted-foreground">/ {s.title || question.title || "session"}</span>}
+        {renaming ? <form className="flex shrink-0 items-center gap-1" onSubmit={e => { e.preventDefault(); void rename(); }}><Input aria-label="Interview name" className="h-8 w-40" maxLength={120} value={name} onChange={e => setName(e.target.value)} /><Button size="sm" type="submit">Save</Button><Button size="sm" variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button></form> : <span className="max-w-48 shrink-0 truncate font-mono text-sm text-muted-foreground">/ {s.title || question.title || "session"}</span>}
         {s.mode === "mock" && isHost && !renaming && <Button size="icon" variant="ghost" title="Rename interview" aria-label="Rename interview" onClick={() => setRenaming(true)}><Pencil /></Button>}
         <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{role}</span>
         <div className="ml-auto flex shrink-0 items-center gap-2">
