@@ -1,5 +1,9 @@
 # Roadmap
 - [ ] Closed mock rooms: read-only guest access and verify persistent history for both guest roles
+- [ ] Mock interviews: saved interview name/date and host naming
+- [ ] Mock rooms: shared countdown with saved timer state
+- [ ] Parser: dynamic programming and greedy scaffolds with executable sample tests
+- [ ] Mock Run: verify real Judge0 execution and visible output
 - [x] Build Interview Studio (auth, dashboard, question editor + AI, room, timers, snapshots)
 - [x] Homepage: replace hero/features with a plain "How it works"
 - [x] Runner: direct CE default, sequential paced execution, graceful fallback and clear errors
