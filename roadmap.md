@@ -10,3 +10,7 @@
 - [x] Freeform: code-style question text, Markdown, optional AI reformat
 - [x] Starter code: common standard imports, including Python sys, with runnable stdin scaffold
 - [x] Questions: delete saved questions with confirmation and verify removal
+- [ ] Mock rooms: persistent timestamped interviewer feedback
+- [ ] Mock sessions: reopen joined and hosted rooms from session list
+- [ ] AI review: validate real Gateway review responses and verify submission
+- [ ] Parser: preserve platform formats and generate honest edge-case tests
