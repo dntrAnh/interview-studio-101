@@ -74,6 +74,64 @@ export type Database = {
         }
         Relationships: []
       }
+      session_feedback: {
+        Row: {
+          author_id: string
+          body: string
+          created_at: string
+          id: string
+          session_id: string
+        }
+        Insert: {
+          author_id: string
+          body: string
+          created_at?: string
+          id?: string
+          session_id: string
+        }
+        Update: {
+          author_id?: string
+          body?: string
+          created_at?: string
+          id?: string
+          session_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_feedback_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      session_history: {
+        Row: {
+          saved_at: string
+          session_id: string
+          user_id: string
+        }
+        Insert: {
+          saved_at?: string
+          session_id: string
+          user_id: string
+        }
+        Update: {
+          saved_at?: string
+          session_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "session_history_session_id_fkey"
+            columns: ["session_id"]
+            isOneToOne: false
+            referencedRelation: "sessions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       session_participants: {
         Row: {
           joined_at: string
@@ -186,6 +244,10 @@ export type Database = {
     }
     Functions: {
       can_edit_session: {
+        Args: { _session: string; _user: string }
+        Returns: boolean
+      }
+      has_session_access: {
         Args: { _session: string; _user: string }
         Returns: boolean
       }
