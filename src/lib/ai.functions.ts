@@ -40,7 +40,17 @@ export const assistQuestion = createServerFn({ method: "POST" })
             content: `${INSTRUCTIONS[data.action]}\n\n${source}\n\nReturn JSON only.`,
           },
         ],
-        text: { format: { type: "json_object" } },
+        text: { format: data.action === "import" ? {
+          type: "json_schema", name: "imported_question", strict: true,
+          schema: {
+            type: "object", additionalProperties: false,
+            properties: {
+              title: { type: "string" }, difficulty: { type: "string", enum: ["Easy", "Medium", "Hard"] }, description: { type: "string" },
+              hints: { type: "array", items: { type: "string" } }, complexity: { type: "string" },
+              test_cases: { type: "array", items: { type: "object", additionalProperties: false, properties: { input: { type: "string" }, expected: { type: "string" } }, required: ["input", "expected"] } },
+            }, required: ["title", "difficulty", "description", "hints", "complexity", "test_cases"],
+          },
+        } : { type: "json_object" } },
       });
       let text = "";
       for (const item of res.output ?? []) {
@@ -95,7 +105,14 @@ export const reviewSubmission = createServerFn({ method: "POST" })
               `\n\nPractice stdin/stdout tests: ${JSON.stringify(q.test_cases).slice(0, 10000)}\n\nLanguage: ${data.language}\n\nCandidate code:\n${data.code.slice(0, 20000)}\n\nReturn JSON only.`,
           },
         ],
-        text: { format: { type: "json_object" } },
+        text: { format: {
+          type: "json_schema", name: "code_review", strict: true,
+          schema: { type: "object", additionalProperties: false, properties: {
+            verdict: { type: "string", enum: ["correct", "partially_correct", "incorrect"] }, correctness: { type: "string" },
+            time_complexity: { type: "string" }, space_complexity: { type: "string" },
+            edge_cases: { type: "array", items: { type: "string" } }, suggestions: { type: "array", items: { type: "string" } },
+          }, required: ["verdict", "correctness", "time_complexity", "space_complexity", "edge_cases", "suggestions"] },
+        } },
       });
       let text = "";
       for (const item of res.output ?? []) {

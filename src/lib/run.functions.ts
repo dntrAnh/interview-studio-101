@@ -11,7 +11,6 @@ export const runCode = createServerFn({ method: "POST" })
   })
   .handler(async ({ data }) => {
     const { executeTests } = await import("./judge0.server");
-    const key = process.env["JUDGE0_API_KEY"];
     const lang = getLanguage(data.language);
-    return executeTests({ ...data, code: withStandardImports(data.code, data.language), languageId: lang.judge0, key, url: process.env["JUDGE0_URL"] });
+    return executeTests({ ...data, code: withStandardImports(data.code, data.language), languageId: lang.judge0 });
   });
