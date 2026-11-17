@@ -10,7 +10,7 @@ const diffClass: Record<string, string> = {
 /** Renders plain-text question descriptions with light markdown: ### headings, bullets, `code`. */
 export function QuestionView({ q }: { q: QuestionData }) {
   return (
-    <div className="space-y-4">
+    <div className="min-w-0 space-y-4 [overflow-wrap:anywhere]">
       <div className="flex flex-wrap items-center gap-2">
         <h1 className="font-display text-xl font-semibold">{q.title || "Untitled question"}</h1>
         <span className={`rounded px-2 py-0.5 font-mono text-xs ${diffClass[q.difficulty] ?? "bg-muted"}`}>{q.difficulty}</span>
@@ -21,10 +21,10 @@ export function QuestionView({ q }: { q: QuestionData }) {
 }
 
 export function RichText({ text }: { text: string }) {
-  if (text.includes("```")) return <div className="space-y-3">{text.split("```").map((part, i) => i % 2 ? <pre key={i} className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs"><code>{part.replace(/^\w*\n/, "")}</code></pre> : <RichText key={i} text={part} />)}</div>;
+  if (text.includes("```")) return <div className="min-w-0 space-y-3">{text.split("```").map((part, i) => i % 2 ? <pre key={i} className="max-w-full overflow-x-auto rounded bg-muted p-3 font-mono text-xs"><code>{part.replace(/^\w*\n/, "")}</code></pre> : <RichText key={i} text={part} />)}</div>;
   const lines = text.split("\n");
   return (
-    <div className="space-y-1.5 text-sm leading-relaxed">
+    <div className="min-w-0 space-y-1.5 text-sm leading-relaxed [overflow-wrap:anywhere]">
       {lines.map((line, i) => {
         if (line.startsWith("### ") || line.startsWith("## "))
           return <h3 key={i} className="pt-3 font-display font-semibold">{line.replace(/^#+\s/, "")}</h3>;
