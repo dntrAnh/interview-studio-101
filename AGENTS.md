@@ -30,9 +30,13 @@ use the editor.
 <!-- LOVABLE:END -->
 
 - Live collaboration uses Yjs synced over Cloud Realtime broadcast (`src/lib/useRoom.ts`); there is no Yjs server, so peers answer `sync-req` and the DB `sessions.code` is only a seed/backup.
-- Code execution uses authenticated `runCode` with direct Judge0 CE by default, sequential paced submissions and optional configured/RapidAPI fallback; stdin→stdout pairs keep languages consistent.
-- Snapshots are insert-only rows (no update/delete grants) to keep them immutable.
+- Code execution uses authenticated `runCode` with direct Judge0 CE only and sequential paced submissions; stdin→stdout pairs keep languages consistent without RapidAPI credentials.
+- Snapshots prohibit updates but allow owner-scoped deletion; their captured contents stay immutable.
 - Root session context derives from the persisted auth session and the single root identity listener; cached route access is only a UI gate, while server middleware and RLS validate access.
 - Room launches share StartSessionDialog so dashboard imports and question-editor launches use the same save/create flow.
 - Guest roles and seat limits are assigned atomically by join_session_as under a room row lock; spectators are read-only and only hosts manage session lifecycle.
-- Common Python imports are supplied by the execution wrapper after module docstrings and future directives; editable starter templates also include them, so saved user code is never rewritten.
+- The Python execution wrapper supplies only sys after docstrings and future directives; other imports stay user-managed and saved code is never rewritten.
+- Mock feedback uses insert-only database rows with server timestamps and host-only inserts; Realtime re-fetches keep all readers synchronized without trusting broadcast authors.
+- Session history is recorded by a participant-insert trigger; history grants read access only, while current participant rows still control seats and editing.
+- AI results are schema-validated before display; imported problems retain explicit executable I/O contracts and generated tests never claim to be official hidden tests.
+- Test-only submission persists code, language, added cases and runner results on the session; AI review remains a separate explicit action.

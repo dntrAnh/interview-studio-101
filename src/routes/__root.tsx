@@ -137,14 +137,23 @@ function RootComponent() {
   const [user, setUser] = useState<User | null>(null);
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data }) => setUser(data.session?.user ?? null));
+    let active = true;
+    let identityEventReceived = false;
+    supabase.auth.getSession().then(({ data }) => {
+      if (active && !identityEventReceived) setUser(data.session?.user ?? null);
+    });
     const { data } = supabase.auth.onAuthStateChange((event, session) => {
+      identityEventReceived = true;
       setUser(session?.user ?? null);
       if (event !== "SIGNED_IN" && event !== "SIGNED_OUT" && event !== "USER_UPDATED") return;
-      router.invalidate();
-      if (event !== "SIGNED_OUT") queryClient.invalidateQueries();
+      // Run session-reading guards only after the auth callback releases its lock.
+      queueMicrotask(() => {
+        if (!active) return;
+        void router.invalidate();
+        if (event !== "SIGNED_OUT") void queryClient.invalidateQueries();
+      });
     });
-    return () => data.subscription.unsubscribe();
+    return () => { active = false; data.subscription.unsubscribe(); };
   }, [router, queryClient]);
 
   return (

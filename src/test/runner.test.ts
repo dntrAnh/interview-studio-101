@@ -15,11 +15,12 @@ describe("runner", () => {
     await executeTests({ code: "print(5)", languageId: 71, tests: [{ input: "a", expected: "5" }, { input: "b", expected: "5" }], fetcher, pause: async ms => { events.push(`pause:${ms}`); } });
     expect(events).toEqual(["submit", "pause:1100", "submit"]);
   });
-  it("falls back only after direct service failure", async () => {
+  it("does not fall back to RapidAPI after direct service failure", async () => {
     const fetcher = vi.fn().mockResolvedValueOnce(new Response("unavailable", { status: 503 })).mockResolvedValueOnce(new Response(JSON.stringify({ stdout: btoa("5"), status: { id: 3 } })));
-    const r = await executeTests({ code: "print(5)", languageId: 71, tests: [], key: "test-key", fetcher, pause: async () => {} });
-    expect(fetcher.mock.calls[1]?.[0]).toContain("judge0-ce.p.rapidapi.com");
-    expect(r.ok).toBe(true);
+    const r = await executeTests({ code: "print(5)", languageId: 71, tests: [], fetcher, pause: async () => {} });
+    expect(fetcher).toHaveBeenCalledTimes(1);
+    expect(r.error).toContain("temporarily unavailable");
+    expect(r.ok).toBe(false);
   });
   it("does not mark runtime errors passing when expected output is empty", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ stdout: "", status: { id: 11 } })));
@@ -27,8 +28,8 @@ describe("runner", () => {
     expect(r.results[0]?.passed).toBe(false);
     expect(fetcher).toHaveBeenCalledTimes(1);
   });
-  it("identifies subscription errors and rate limits", () => {
-    expect(runnerMessage(403, '{"message":"You are not subscribed"}', true)).toContain("Not subscribed");
-    expect(runnerMessage(429, "", false)).toContain("Rate limit exceeded");
+  it("identifies public runner access errors and rate limits", () => {
+    expect(runnerMessage(403)).toContain("not accepting submissions");
+    expect(runnerMessage(429)).toContain("Rate limit exceeded");
   });
 });

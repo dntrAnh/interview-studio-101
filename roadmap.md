@@ -10,3 +10,12 @@
 - [x] Freeform: code-style question text, Markdown, optional AI reformat
 - [x] Starter code: common standard imports, including Python sys, with runnable stdin scaffold
 - [x] Questions: delete saved questions with confirmation and verify removal
+- [x] Mock rooms: persistent timestamped interviewer feedback
+- [x] Mock sessions: reopen joined and hosted rooms from session list
+- [x] AI review: validate real Gateway review responses and verify submission
+- [x] Parser: preserve platform formats and generate honest edge-case tests
+- [x] End session: keep sign-in and return safely to dashboard
+- [x] Python imports: keep only sys supplied; other imports are user-managed
+- [x] Submit: run added edge-case tests without requesting AI review
+- [x] Snapshots: allow owner deletion with confirmation
+- [x] Runner: direct Judge0 CE without RapidAPI and verify clear errors

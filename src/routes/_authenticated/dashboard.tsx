@@ -9,6 +9,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { type QuestionData } from "@/lib/types";
 import { StartSessionDialog } from "@/components/StartSessionDialog";
 import { canManageRoom } from "@/lib/room-access";
+import { canDeleteSnapshot } from "@/lib/submission";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -31,6 +32,7 @@ function Dashboard() {
   const [startMode, setStartMode] = useState<"solo" | "mock" | null>(null);
   const [showArchived, setShowArchived] = useState(false);
   const [deletingQuestion, setDeletingQuestion] = useState<string | null>(null);
+  const [deletingSnapshot, setDeletingSnapshot] = useState<string | null>(null);
 
   const questions = useQuery({
     queryKey: ["questions"],
@@ -51,7 +53,7 @@ function Dashboard() {
   const snapshots = useQuery({
     queryKey: ["snapshots"],
     queryFn: async () => {
-      const { data, error } = await supabase.from("snapshots").select("id, title, created_at, session_id").order("created_at", { ascending: false }).limit(50);
+      const { data, error } = await supabase.from("snapshots").select("id, title, created_at, session_id, owner_id").order("created_at", { ascending: false }).limit(50);
       if (error) throw error;
       return data;
     },
@@ -82,6 +84,17 @@ function Dashboard() {
     if (result.error) { toast.error(result.error.message); return; }
     await sessions.refetch();
     toast.success(action === "delete" ? "Session deleted" : action === "archive" ? "Session archived" : "Session restored");
+  }
+
+  async function deleteSnapshot(id: string) {
+    if (deletingSnapshot || !confirm("Delete this snapshot permanently? This cannot be undone.")) return;
+    setDeletingSnapshot(id);
+    try {
+      const { data, error } = await supabase.from("snapshots").delete().eq("id", id).eq("owner_id", user.id).select("id");
+      if (error || !data?.length) { toast.error("Could not delete the snapshot. Please try again."); return; }
+      await snapshots.refetch();
+      toast.success("Snapshot deleted");
+    } finally { setDeletingSnapshot(null); }
   }
 
   return (
@@ -131,7 +144,7 @@ function Dashboard() {
                   <Link to="/session/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-muted">
                     {s.mode === "mock" ? <Users className="h-4 w-4 text-accent" /> : <Timer className="h-4 w-4 text-primary" />}
                     <span className="flex-1 truncate">{s.title || "Untitled"}</span>
-                    <span className="hidden font-mono text-xs text-muted-foreground sm:block">{s.host_id === user.id ? "host" : "guest"} · {fmtDate(s.created_at)}</span>
+                    <span className="hidden font-mono text-xs text-muted-foreground sm:block">{s.host_id === user.id ? "host" : "guest"} · {s.status} · {fmtDate(s.created_at)}</span>
                   </Link>
                   {s.host_id === user.id && <div className="flex shrink-0 pr-2"><Button variant="ghost" size="icon" title={showArchived ? "Restore session" : "Archive session"} aria-label={showArchived ? "Restore session" : "Archive session"} onClick={() => manageSession(s.id, showArchived ? "restore" : "archive")}>{showArchived ? <ArchiveRestore /> : <Archive />}</Button><Button variant="ghost" size="icon" title="Delete session" aria-label="Delete session" onClick={() => manageSession(s.id, "delete")}><Trash2 /></Button></div>}
                 </li>
@@ -143,12 +156,13 @@ function Dashboard() {
             {snapshots.data?.length === 0 && <Empty text="Save a snapshot from any session to keep a frozen record." />}
             <ul className="divide-y rounded-lg border bg-card">
               {snapshots.data?.map((s) => (
-                <li key={s.id}>
-                  <Link to="/snapshot/$id" params={{ id: s.id }} className="flex items-center gap-3 px-4 py-3 hover:bg-muted">
+                <li key={s.id} className="flex items-center">
+                  <Link to="/snapshot/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-muted">
                     <Camera className="h-4 w-4 text-accent" />
                     <span className="flex-1 truncate">{s.title || "Snapshot"}</span>
                     <span className="font-mono text-xs text-muted-foreground">{fmtDate(s.created_at)}</span>
                   </Link>
+                  {canDeleteSnapshot(s.owner_id, user.id) && <Button variant="ghost" size="icon" className="mr-2 shrink-0" title="Delete snapshot" aria-label={`Delete snapshot: ${s.title || "Snapshot"}`} disabled={deletingSnapshot !== null} onClick={() => deleteSnapshot(s.id)}><Trash2 /></Button>}
                 </li>
               ))}
             </ul>

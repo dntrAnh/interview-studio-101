@@ -36,6 +36,20 @@
       "when": 1794875117626,
       "tag": "0004_protect_session_lifecycle",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794875859376,
+      "tag": "0005_mock_feedback_and_session_history",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1794876195082,
+      "tag": "0006_snapshot_owner_delete_and_submissions",
+      "breakpoints": true
     }
   ]
 }
