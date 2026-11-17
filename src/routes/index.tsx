@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { Button } from "@/components/ui/button";
 import { AppHeader } from "@/components/AppHeader";
+import { useEffect } from "react";
+import { useNavigate } from "@tanstack/react-router";
+import { useSessionUser } from "@/lib/session-context";
 
 export const Route = createFileRoute("/")({
   head: () => ({
@@ -24,11 +27,16 @@ const steps = [
 ];
 
 function Landing() {
+  const user = useSessionUser();
+  const navigate = useNavigate();
+  useEffect(() => {
+    if (user) navigate({ to: "/dashboard", replace: true });
+  }, [user, navigate]);
   return (
     <div className="min-h-screen bg-background">
       <AppHeader signedIn={false}>
         <div className="ml-auto" />
-        <Button asChild variant="ghost" size="sm"><Link to="/auth">Sign in</Link></Button>
+        <Button asChild variant="ghost" size="sm"><Link to={user ? "/dashboard" : "/auth"}>{user ? "Go to Dashboard" : "Sign in"}</Link></Button>
       </AppHeader>
       <main className="mx-auto max-w-3xl px-6 py-16">
         <h1 className="font-display text-3xl font-bold">How it works</h1>

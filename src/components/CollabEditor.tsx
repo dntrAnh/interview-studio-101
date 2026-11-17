@@ -15,9 +15,13 @@ import type { Awareness } from "y-protocols/awareness";
 };
 loader.config({ monaco });
 
+export function QuestionTextEditor({ value, onChange, dark }: { value: string; onChange: (value: string) => void; dark: boolean }) {
+  return <Editor height="220px" language="plaintext" theme={dark ? "vs-dark" : "vs"} value={value} onChange={v => onChange(v ?? "")} options={{ minimap: { enabled: false }, fontFamily: "JetBrains Mono, monospace", fontSize: 14, scrollBeyondLastLine: false, wordWrap: "on", automaticLayout: true }} />;
+}
+
 export default function CollabEditor({
-  ytext, awareness, language, dark,
-}: { ytext: Y.Text; awareness: Awareness; language: string; dark: boolean }) {
+  ytext, awareness, language, dark, readOnly = false,
+}: { ytext: Y.Text; awareness: Awareness; language: string; dark: boolean; readOnly?: boolean }) {
   const bindingRef = useRef<MonacoBinding | null>(null);
   useEffect(() => () => bindingRef.current?.destroy(), []);
   return (
@@ -26,6 +30,7 @@ export default function CollabEditor({
       language={language}
       theme={dark ? "vs-dark" : "vs"}
       options={{
+        readOnly,
         fontFamily: "JetBrains Mono, monospace",
         fontSize: 14,
         minimap: { enabled: false },

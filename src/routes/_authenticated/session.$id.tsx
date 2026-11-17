@@ -20,6 +20,7 @@ import { reviewSubmission, type CodeReview } from "@/lib/ai.functions";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
 import { useIsDark } from "@/lib/theme";
+import { GUEST_SEATS, canEditRoom } from "@/lib/room-access";
 
 const CollabEditor = lazy(() => import("@/components/CollabEditor"));
 
@@ -40,41 +41,48 @@ export const Route = createFileRoute("/_authenticated/session/$id")({
 function SessionPage() {
   const { id } = Route.useParams();
   const { user } = Route.useRouteContext();
+  const [joining, setJoining] = useState(false);
   const session = useQuery({
     queryKey: ["session", id],
     queryFn: async () => {
       let { data } = await supabase.from("sessions").select("*").eq("id", id).maybeSingle();
-      if (!data) {
-        await supabase.rpc("join_session", { _session: id });
-        ({ data } = await supabase.from("sessions").select("*").eq("id", id).maybeSingle());
-      }
+      const { data: participant } = data && data.host_id !== user.id ? await supabase.from("session_participants").select("role").eq("session_id", id).eq("user_id", user.id).maybeSingle() : { data: null };
       const { data: profile } = await supabase.from("profiles").select("display_name").eq("id", user.id).maybeSingle();
-      return { session: data, name: profile?.display_name || user.email?.split("@")[0] || "You" };
+      return { session: data, role: participant?.role, name: profile?.display_name || user.email?.split("@")[0] || "You" };
     },
     staleTime: Infinity,
     refetchOnWindowFocus: false,
   });
 
   if (session.isLoading) return <div className="grid min-h-screen place-items-center font-mono text-sm text-muted-foreground">joining room…</div>;
+  async function join(role: "interviewee" | "spectator") {
+    setJoining(true);
+    const { error } = await supabase.rpc("join_session_as", { _session: id, _role: role });
+    if (error) toast.error(error.message);
+    else await session.refetch();
+    setJoining(false);
+  }
   if (!session.data?.session)
     return (
       <div className="grid min-h-screen place-items-center text-center">
-        <div><p className="font-display text-xl">Room not found</p>
+        <div className="space-y-4"><h1 className="font-display text-xl">Join mock interview</h1>
+          <div className="flex flex-wrap justify-center gap-3"><Button disabled={joining} onClick={() => join("interviewee")}>Interviewee ({GUEST_SEATS.interviewee} seat)</Button><Button variant="outline" disabled={joining} onClick={() => join("spectator")}>Spectator ({GUEST_SEATS.spectator} seats)</Button></div>
           <Button asChild className="mt-4" variant="outline"><Link to="/dashboard">Back to dashboard</Link></Button></div>
       </div>
     );
-  return <Room s={session.data.session} myName={session.data.name} userId={user.id} />;
+  return <Room s={session.data.session} myName={session.data.name} userId={user.id} guestRole={session.data.role} />;
 }
 
 type SessionRow = Database["public"]["Tables"]["sessions"]["Row"];
 
-function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: string }) {
+function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string; userId: string; guestRole?: string | undefined }) {
   const navigate = useNavigate();
   const dark = useIsDark();
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
-  const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : "interviewee";
+  const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : guestRole ?? "interviewee";
+  const spectator = !canEditRoom(role);
   const initial: SharedState = {
     language: s.language,
     hintsVisible: s.hints_visible,
@@ -108,6 +116,7 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
   // Persist the latest code and settings so the room survives everyone leaving.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   useEffect(() => {
+    if (spectator) return;
     const save = () => {
       if (saveTimer.current) clearTimeout(saveTimer.current);
       saveTimer.current = setTimeout(() => {
@@ -116,13 +125,13 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
     };
     ytext.observe(save);
     return () => ytext.unobserve(save);
-  }, [ytext, s.id]);
+  }, [ytext, s.id, spectator]);
   const stateRef = useRef(state);
   stateRef.current = state;
   useEffect(() => {
-    if (!room.ready) return;
+    if (!room.ready || spectator) return;
     supabase.from("sessions").update({ language: state.language, hints_visible: state.hintsVisible }).eq("id", s.id).then();
-  }, [state.language, state.hintsVisible, room.ready, s.id]);
+  }, [state.language, state.hintsVisible, room.ready, s.id, spectator]);
 
   function changeLanguage(lang: string) {
     const current = ytext.toString().trim();
@@ -172,6 +181,7 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
 
   async function endSession() {
     if (isHost) await supabase.from("sessions").update({ status: "ended", code: ytext.toString() }).eq("id", s.id);
+    else await supabase.from("session_participants").delete().eq("session_id", s.id).eq("user_id", userId);
     navigate({ to: "/dashboard" });
   }
 
@@ -184,7 +194,7 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
         <span className="truncate font-mono text-sm text-muted-foreground">/ {question.title || "session"}</span>
         <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{role}</span>
         <div className="ml-auto flex items-center gap-2">
-          <TimerControl timer={state.timer} onChange={(timer) => setState({ timer })} />
+          <div className={spectator ? "pointer-events-none" : ""}><TimerControl timer={state.timer} onChange={(timer) => { if (!spectator) setState({ timer }); }} /></div>
           <div className="flex -space-x-2">
             {room.peers.map((p) => (
               <span key={p.userId} title={`${p.name} (${p.role})`} className="grid h-7 w-7 place-items-center rounded-full border-2 border-panel bg-secondary font-mono text-xs font-bold" style={{ color: p.color }}>
@@ -233,19 +243,19 @@ function Room({ s, myName, userId }: { s: SessionRow; myName: string; userId: st
         <ResizablePanel defaultSize="60%" minSize="30%">
           <div className="flex h-full flex-col">
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex items-center gap-2 border-b bg-panel px-3 py-1.5">
-                  <Select value={state.language} onValueChange={changeLanguage}>
+                <div className="flex flex-wrap items-center gap-2 border-b bg-panel px-3 py-1.5">
+                  <Select value={state.language} onValueChange={changeLanguage} disabled={spectator}>
                     <SelectTrigger className="h-8 w-40" aria-label="Language"><SelectValue /></SelectTrigger>
                     <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>)}</SelectContent>
                   </Select>
                   <span className="font-mono text-xs text-muted-foreground">{room.ready ? "● live" : "connecting…"}</span>
-                  <Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
-                  <Button size="sm" onClick={onRun} disabled={running}><Play /> {running ? "Running…" : question.test_cases.length ? "Run tests" : "Run"}</Button>
+                  <Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing || spectator}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
+                  <Button size="sm" onClick={onRun} disabled={running || spectator}><Play /> {running ? "Running…" : question.test_cases.length ? "Run tests" : "Run"}</Button>
                 </div>
                 <div className="min-h-0 flex-1">
                   {room.ready ? (
                     <Suspense fallback={<div className="p-4 font-mono text-xs text-muted-foreground">loading editor…</div>}>
-                      <CollabEditor ytext={ytext} awareness={room.awareness} language={getLanguage(state.language).monaco} dark={dark} />
+                      <CollabEditor ytext={ytext} awareness={room.awareness} language={getLanguage(state.language).monaco} dark={dark} readOnly={spectator} />
                     </Suspense>
                   ) : (
                     <div className="p-4 font-mono text-xs text-muted-foreground">syncing code…</div>
