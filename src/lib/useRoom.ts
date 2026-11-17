@@ -18,7 +18,7 @@ export type Peer = { userId: string; name: string; role: string; color: string }
 const COLORS = ["#f59e0b", "#22c55e", "#38bdf8", "#f472b6", "#a3e635", "#fb923c"];
 const toB64 = (u: Uint8Array) => {
   let s = "";
-  for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i]!);
+  for (let i = 0; i < u.length; i++) s += String.fromCharCode(u[i] ?? 0);
   return btoa(s);
 };
 const fromB64 = (s: string) => Uint8Array.from(atob(s), (c) => c.charCodeAt(0));
@@ -28,6 +28,7 @@ export function useRoom(opts: {
   me: { id: string; name: string; role: string };
   initial: SharedState;
   initialCode: string;
+  pastRoom?: boolean;
 }) {
   const { sessionId, me } = opts;
   const doc = useMemo(() => new Y.Doc(), [sessionId]);
@@ -40,9 +41,14 @@ export function useRoom(opts: {
   const [ready, setReady] = useState(false);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const initialCodeRef = useRef(opts.initialCode);
-  const color = useMemo(() => COLORS[Math.abs(hash(me.id)) % COLORS.length]!, [me.id]);
+  const color = useMemo(() => COLORS[Math.abs(hash(me.id)) % COLORS.length] ?? COLORS[0], [me.id]);
 
   useEffect(() => {
+    if (opts.pastRoom) {
+      if (ytext.length === 0) ytext.insert(0, initialCodeRef.current);
+      setReady(true);
+      return;
+    }
     awareness.setLocalStateField("user", { name: me.name, color });
     const channel = supabase.channel(`session:${sessionId}`, {
       config: { broadcast: { self: false }, presence: { key: me.id } },
@@ -95,14 +101,15 @@ export function useRoom(opts: {
       supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [sessionId, me.id, me.name, me.role, color, doc, ytext, awareness]);
+  }, [sessionId, me.id, me.name, me.role, color, doc, ytext, awareness, opts.pastRoom]);
 
   const setState = useCallback((patch: Partial<SharedState>) => {
+    if (opts.pastRoom) return;
     const next = { ...stateRef.current, ...patch };
     stateRef.current = next;
     setStateRaw(next);
     channelRef.current?.send({ type: "broadcast", event: "state", payload: { state: next } });
-  }, []);
+  }, [opts.pastRoom]);
 
   return { doc, ytext, awareness, state, setState, peers, ready };
 }

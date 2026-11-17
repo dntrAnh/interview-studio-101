@@ -20,7 +20,7 @@ import { reviewSubmission, type CodeReview } from "@/lib/ai.functions";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
 import { useIsDark } from "@/lib/theme";
-import { GUEST_SEATS, canEditRoom, roomExecutionMode } from "@/lib/room-access";
+import { GUEST_SEATS, canEditRoom, isPastGuestRoom, roomExecutionMode } from "@/lib/room-access";
 import { InterviewFeedback } from "@/components/InterviewFeedback";
 import { canPostFeedback } from "@/lib/interview-feedback";
 import { SubmissionTests } from "@/components/SubmissionTests";
@@ -57,6 +57,7 @@ function SessionPage() {
     },
     staleTime: Infinity,
     refetchOnWindowFocus: false,
+    refetchInterval: 5000,
   });
 
   if (session.isLoading) return <div className="grid min-h-screen place-items-center font-mono text-sm text-muted-foreground">joining room…</div>;
@@ -67,7 +68,8 @@ function SessionPage() {
     else await session.refetch();
     setJoining(false);
   }
-  if (!session.data?.session || (session.data.session.host_id !== user.id && !session.data.role && session.data.session.status === "active"))
+  if (!session.data?.session) return <div className="grid min-h-screen place-items-center text-center"><div className="space-y-4"><h1 className="font-display text-xl">Room unavailable</h1><Button asChild variant="outline"><Link to="/dashboard">Back to dashboard</Link></Button></div></div>;
+  if (session.data.session.host_id !== user.id && !session.data.role && session.data.session.status === "active")
     return (
       <div className="grid min-h-screen place-items-center text-center">
         <div className="space-y-4"><h1 className="font-display text-xl">Join mock interview</h1>
@@ -75,7 +77,7 @@ function SessionPage() {
           <Button asChild className="mt-4" variant="outline"><Link to="/dashboard">Back to dashboard</Link></Button></div>
       </div>
     );
-  return <Room s={session.data.session} myName={session.data.name} userId={user.id} guestRole={session.data.role} />;
+  return <Room key={`${id}:${session.data.session.status}`} s={session.data.session} myName={session.data.name} userId={user.id} guestRole={session.data.role} />;
 }
 
 type SessionRow = Database["public"]["Tables"]["sessions"]["Row"];
@@ -87,12 +89,13 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const dark = useIsDark();
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
+  const pastRoom = isPastGuestRoom(s.mode, s.status, isHost);
   const runOnly = roomExecutionMode(s.mode) === "run-only";
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
   const saved = savedSubmissionSchema.safeParse(s.last_submission);
   const [addedTests, setAddedTests] = useState<TestCase[]>(saved.success ? saved.data.addedTests : []);
   const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : guestRole ?? "spectator";
-  const spectator = !canEditRoom(role);
+  const spectator = !canEditRoom(role, pastRoom);
   const initial: SharedState = {
     language: s.language,
     hintsVisible: s.hints_visible,
@@ -100,7 +103,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     results: saved.success ? saved.data.results : null,
     runError: saved.success ? saved.data.error : null,
   };
-  const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, initialCode: s.code || (runOnly ? s.language === "python" ? "import sys\n\n" : "\n" : question.starter_code[s.language] || getLanguage(s.language).starter) });
+  const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, pastRoom, initialCode: pastRoom ? s.code : s.code || (runOnly ? s.language === "python" ? "import sys\n\n" : "\n" : question.starter_code[s.language] || getLanguage(s.language).starter) });
   const { state, setState, ytext } = room;
   const [running, setRunning] = useState(false);
   const [stdin, setStdin] = useState("");
@@ -135,7 +138,10 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
       }, 2000);
     };
     ytext.observe(save);
-    return () => ytext.unobserve(save);
+    return () => {
+      ytext.unobserve(save);
+      if (saveTimer.current) clearTimeout(saveTimer.current);
+    };
   }, [ytext, s.id, spectator]);
   const stateRef = useRef(state);
   stateRef.current = state;
@@ -145,6 +151,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   }, [state.language, state.hintsVisible, room.ready, s.id, spectator]);
 
   function changeLanguage(lang: string) {
+    if (spectator) return;
     const current = ytext.toString().trim();
     const isTemplate = !current || LANGUAGES.some((l) => l.starter.trim() === current) || Object.values(question.starter_code).some((c) => c.trim() === current);
     if (isTemplate) {
@@ -203,6 +210,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
 
   async function endSession() {
     if (ending) return;
+    if (pastRoom) { await navigate({ to: "/dashboard" }); return; }
     setEnding(true);
     if (saveTimer.current) clearTimeout(saveTimer.current);
     try {
@@ -234,13 +242,13 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
               </span>
             ))}
           </div>
-          {s.mode === "mock" && (
+          {s.mode === "mock" && s.status === "active" && (
             <Button size="sm" variant="outline" onClick={() => { navigator.clipboard.writeText(window.location.href); toast.success("Invite link copied"); }}>
               <Link2 /> Invite
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={snapshot}><Camera /> Snapshot</Button>
-          <Button size="sm" variant="ghost" onClick={endSession} disabled={ending}>{ending ? "Saving…" : isHost ? "End" : "Leave"}</Button>
+          <Button size="sm" variant="ghost" onClick={endSession} disabled={ending}>{ending ? "Saving…" : pastRoom ? "Back to dashboard" : isHost ? "End" : "Leave"}</Button>
         </div>
       </AppHeader>
 
@@ -282,7 +290,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                     <SelectTrigger className="h-8 w-40" aria-label="Language"><SelectValue /></SelectTrigger>
                     <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>)}</SelectContent>
                   </Select>
-                  <span className="font-mono text-xs text-muted-foreground">{room.ready ? "● live" : "connecting…"}</span>
+                  <span className="font-mono text-xs text-muted-foreground">{pastRoom ? "Past room · read-only" : room.ready ? "● live" : "connecting…"}</span>
                   {!runOnly && <><Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing || spectator}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
                   <Button size="sm" variant="outline" onClick={() => onRun(true)} disabled={running || spectator}><Send /> Submit</Button></>}
                   <Button size="sm" className={runOnly ? "ml-auto" : ""} onClick={() => onRun()} disabled={running || spectator}><Play /> {running ? "Running…" : !runOnly && question.test_cases.length ? "Run tests" : "Run"}</Button>
