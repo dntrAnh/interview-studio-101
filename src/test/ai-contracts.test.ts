@@ -4,14 +4,14 @@ import { importedQuestion } from "@/lib/question-patch";
 
 describe("AI result validation", () => {
   it("preserves dynamic programming starter parameters and sample cases", () => {
-    const q = importedQuestion(questionPatchSchema.parse({ starter_code: { python: "def coinChange(coins, amount):\n    return -1\n" }, test_cases: [{ input: "3\n1 2 5\n11\n", expected: "3\n" }, { input: "1\n2\n3\n", expected: "-1\n" }] }));
-    expect(q.starter_code.python).toContain("coinChange(coins, amount)");
-    expect(q.test_cases[1]).toEqual({ input: "1\n2\n3\n", expected: "-1\n" });
+    const q = questionPatchSchema.parse({ starter_code: { python: "def coinChange(coins, amount):\n    return -1\n" }, test_cases: [{ input: "3\n1 2 5\n11\n", expected: "3\n" }, { input: "1\n2\n3\n", expected: "-1\n" }] });
+    expect(q.starter_code?.["python"]).toContain("coinChange(coins, amount)");
+    expect(q.test_cases?.[1]).toEqual({ input: "1\n2\n3\n", expected: "-1\n" });
   });
   it("preserves greedy starter parameters and sample cases", () => {
-    const q = importedQuestion(questionPatchSchema.parse({ starter_code: { python: "def eraseOverlapIntervals(intervals):\n    return 0\n" }, test_cases: [{ input: "3\n1 2\n2 3\n1 3\n", expected: "1\n" }] }));
-    expect(q.starter_code.python).toContain("eraseOverlapIntervals(intervals)");
-    expect(q.test_cases[0]?.expected).toBe("1\n");
+    const q = questionPatchSchema.parse({ starter_code: { python: "def eraseOverlapIntervals(intervals):\n    return 0\n" }, test_cases: [{ input: "3\n1 2\n2 3\n1 3\n", expected: "1\n" }] });
+    expect(q.starter_code?.["python"]).toContain("eraseOverlapIntervals(intervals)");
+    expect(q.test_cases?.[0]?.expected).toBe("1\n");
   });
   it("preserves parameterized starter functions through parsing and question normalization", () => {
     const python = "import sys\n\ndef twoSum(nums, target):\n    # TODO\n    return []\n";

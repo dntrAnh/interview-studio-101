@@ -325,7 +325,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                 </div>
               </div>
               <div className="h-60 shrink-0 border-t">
-                <OutputPanel state={state} hasTests={!runOnly && question.test_cases.length + addedTests.length > 0} stdin={stdin} setStdin={spectator ? undefined : setStdin} />
+                <OutputPanel state={state} hasTests={!runOnly && question.test_cases.length + addedTests.length > 0} stdin={stdin} {...(spectator ? {} : { setStdin })} />
               </div>
           </div>
         </ResizablePanel>
