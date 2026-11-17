@@ -3,3 +3,6 @@ export function canEditRoom(role: string) {
   return role === "solo" || role === "interviewer" || role === "interviewee";
 }
 export function canManageRoom(isHost: boolean) { return isHost; }
+export function roomExecutionMode(mode: string) {
+  return mode === "mock" ? "run-only" : "practice";
+}

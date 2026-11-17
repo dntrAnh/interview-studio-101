@@ -1,7 +1,12 @@
 import { describe, expect, it } from "vitest";
 import { codeReviewSchema, questionPatchSchema } from "@/lib/ai-contracts";
+import { importedQuestion } from "@/lib/question-patch";
 
 describe("AI result validation", () => {
+  it("preserves parameterized starter functions through parsing and question normalization", () => {
+    const python = "import sys\n\ndef twoSum(nums, target):\n    # TODO\n    return []\n";
+    expect(importedQuestion(questionPatchSchema.parse({ starter_code: { python } })).starter_code.python).toBe(python);
+  });
   it("rejects empty placeholder reviews", () => expect(codeReviewSchema.safeParse({}).success).toBe(false));
   it("accepts a complete review with actual complexity and edge cases", () => {
     expect(codeReviewSchema.parse({ verdict: "incorrect", correctness: "Always prints zero instead of the sum.", time_complexity: "O(1)", space_complexity: "O(1)", edge_cases: ["1 + 2 should be 3, not 0"], suggestions: ["Read both numbers and add them."] }).verdict).toBe("incorrect");
