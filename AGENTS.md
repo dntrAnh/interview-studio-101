@@ -39,3 +39,4 @@ use the editor.
 - Mock feedback uses insert-only database rows with server timestamps and host-only inserts; Realtime re-fetches keep all readers synchronized without trusting broadcast authors.
 - Session history is recorded by a participant-insert trigger; history grants read access only, while current participant rows still control seats and editing.
 - AI results are schema-validated before display; imported problems retain explicit executable I/O contracts and generated tests never claim to be official hidden tests.
+- Test-only submission persists code, language, added cases and runner results on the session; AI review remains a separate explicit action.
