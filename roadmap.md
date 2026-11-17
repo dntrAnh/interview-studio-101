@@ -15,3 +15,7 @@
 - [ ] AI review: validate real Gateway review responses and verify submission
 - [ ] Parser: preserve platform formats and generate honest edge-case tests
 - [ ] End session: keep sign-in and return safely to dashboard
+- [ ] Python imports: keep only sys supplied; other imports are user-managed
+- [ ] Submit: run added edge-case tests without requesting AI review
+- [ ] Snapshots: allow owner deletion with confirmation
+- [ ] Runner: direct Judge0 CE without RapidAPI and verify clear errors
