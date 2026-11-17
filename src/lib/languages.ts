@@ -2,7 +2,7 @@ export type LanguageId =
   | "python" | "javascript" | "typescript" | "java" | "cpp" | "c" | "go" | "csharp" | "ruby" | "rust";
 
 export const LANGUAGES: { id: LanguageId; label: string; monaco: string; judge0: number; starter: string }[] = [
-  { id: "python", label: "Python 3", monaco: "python", judge0: 71, starter: "import sys\nimport math\nimport heapq\nimport bisect\nfrom collections import Counter, defaultdict, deque\nfrom functools import lru_cache\nfrom itertools import combinations, permutations, product\nfrom typing import List, Dict, Tuple, Optional, Set\n\ndef solve():\n    data = sys.stdin.read()\n    # Parse data, solve the problem, and print the result.\n    print(data.rstrip())\n\nif __name__ == '__main__':\n    solve()\n" },
+  { id: "python", label: "Python 3", monaco: "python", judge0: 71, starter: "import sys\n\ndef solve():\n    data = sys.stdin.read()\n    # Parse data, solve the problem, and print the result.\n    print(data.rstrip())\n\nif __name__ == '__main__':\n    solve()\n" },
   { id: "javascript", label: "JavaScript", monaco: "javascript", judge0: 63, starter: "const lines = require('fs').readFileSync(0, 'utf8').trim().split('\\n');\nconsole.log(lines[0]);\n" },
   { id: "typescript", label: "TypeScript", monaco: "typescript", judge0: 74, starter: "const lines: string[] = require('fs').readFileSync(0, 'utf8').trim().split('\\n');\nconsole.log(lines[0]);\n" },
   { id: "java", label: "Java", monaco: "java", judge0: 62, starter: "import java.util.*;\nimport java.io.*;\nimport java.math.*;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        if (sc.hasNextLine()) System.out.println(sc.nextLine());\n    }\n}\n" },
@@ -22,7 +22,7 @@ export function getLanguage(id: string) {
 
 export function withStandardImports(code: string, language: string) {
   if (language !== "python") return code;
-  const imports = getLanguage("python").starter.split("\n\ndef solve")[0] ?? "import sys";
+  const imports = "import sys";
   // Future directives and a module docstring must remain first.
   const lines = code.split("\n");
   let index = 0;

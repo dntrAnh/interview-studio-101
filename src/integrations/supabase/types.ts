@@ -169,6 +169,7 @@ export type Database = {
           host_id: string
           id: string
           language: string
+          last_submission: Json | null
           mode: string
           question: Json
           status: string
@@ -182,6 +183,7 @@ export type Database = {
           host_id: string
           id?: string
           language?: string
+          last_submission?: Json | null
           mode?: string
           question?: Json
           status?: string
@@ -195,6 +197,7 @@ export type Database = {
           host_id?: string
           id?: string
           language?: string
+          last_submission?: Json | null
           mode?: string
           question?: Json
           status?: string

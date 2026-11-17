@@ -13,4 +13,8 @@ describe("standard imports", () => {
   it("does not alter other language programs", () => {
     expect(withStandardImports("console.log(1)", "javascript")).toBe("console.log(1)");
   });
+  it("supplies only sys and leaves other imports to the user", () => {
+    expect(getLanguage("python").starter.split("\n").filter(line => /^(import |from )/.test(line))).toEqual(["import sys"]);
+    expect(withStandardImports("print(1)", "python")).toBe("import sys\n\nprint(1)");
+  });
 });
