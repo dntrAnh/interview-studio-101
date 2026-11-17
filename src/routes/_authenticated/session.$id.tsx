@@ -102,7 +102,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const initial: SharedState = {
     language: s.language,
     hintsVisible: s.hints_visible,
-    timer: initialRoomTimer(s.timer_state),
+    timer: pastRoom ? { ...initialRoomTimer(s.timer_state), running: false, startedAt: null, accumulatedMs: elapsedMs(initialRoomTimer(s.timer_state), new Date(s.updated_at).getTime()) } : initialRoomTimer(s.timer_state),
     results: saved.success ? saved.data.results : null,
     runError: saved.success ? saved.data.error : null,
   };
@@ -188,10 +188,10 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
       const tests = runOnly ? [] : submit ? [...question.test_cases, ...addedTests] : question.test_cases;
       const res = await run({ data: { language: state.language, code, tests, customInput: stdin } });
       setState({ results: res.results, runError: res.error });
-      if (submit) {
+      if (submit || runOnly) {
         const { error } = await supabase.from("sessions").update({ code, language: state.language, last_submission: { code, language: state.language, addedTests, results: res.results, error: res.error, submittedAt: new Date().toISOString() } }).eq("id", s.id);
-        if (error) toast.error("Tests ran, but the submission could not be saved.");
-        else toast.success(res.error ? "Submission saved with runner error" : "Submission saved");
+        if (error) toast.error(runOnly ? "Code ran, but the result could not be saved." : "Tests ran, but the submission could not be saved.");
+        else if (submit) toast.success(res.error ? "Submission saved with runner error" : "Submission saved");
       }
     } catch {
       setState({ runError: "Could not run the code.", results: null });
@@ -232,7 +232,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     if (saveTimer.current) clearTimeout(saveTimer.current);
     try {
       const result = isHost
-        ? await supabase.from("sessions").update({ status: "ended", code: ytext.toString(), language: state.language, updated_at: new Date().toISOString() }).eq("id", s.id)
+        ? await supabase.from("sessions").update({ status: "ended", code: ytext.toString(), language: state.language, timer_state: { ...state.timer, running: false, startedAt: null, accumulatedMs: elapsedMs(state.timer) }, updated_at: new Date().toISOString() }).eq("id", s.id)
         : await supabase.from("session_participants").delete().eq("session_id", s.id).eq("user_id", userId);
       if (result.error) throw result.error;
       await qc.invalidateQueries({ queryKey: ["sessions"] });
@@ -248,10 +248,10 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   return (
     <div className="flex h-screen flex-col bg-background">
       <AppHeader>
-        {renaming ? <form className="flex min-w-0 items-center gap-1" onSubmit={e => { e.preventDefault(); void rename(); }}><Input aria-label="Interview name" className="h-8 w-40" maxLength={120} value={name} onChange={e => setName(e.target.value)} /><Button size="sm" type="submit">Save</Button><Button size="sm" variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button></form> : <span className="truncate font-mono text-sm text-muted-foreground">/ {s.title || question.title || "session"}</span>}
+        {renaming ? <form className="flex shrink-0 items-center gap-1" onSubmit={e => { e.preventDefault(); void rename(); }}><Input aria-label="Interview name" className="h-8 w-40" maxLength={120} value={name} onChange={e => setName(e.target.value)} /><Button size="sm" type="submit">Save</Button><Button size="sm" variant="ghost" onClick={() => setRenaming(false)}>Cancel</Button></form> : <span className="truncate font-mono text-sm text-muted-foreground">/ {s.title || question.title || "session"}</span>}
         {s.mode === "mock" && isHost && !renaming && <Button size="icon" variant="ghost" title="Rename interview" aria-label="Rename interview" onClick={() => setRenaming(true)}><Pencil /></Button>}
         <span className="rounded bg-muted px-2 py-0.5 font-mono text-xs">{role}</span>
-        <div className="ml-auto flex items-center gap-2">
+        <div className="ml-auto flex shrink-0 items-center gap-2">
           <TimerControl disabled={spectator} timer={state.timer} onChange={(timer) => { if (!spectator) setState({ timer }); }} />
           <div className="flex -space-x-2">
             {room.peers.map((p) => (
