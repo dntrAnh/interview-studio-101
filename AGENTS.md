@@ -35,3 +35,4 @@ use the editor.
 - Root session context derives from the persisted auth session and the single root identity listener; cached route access is only a UI gate, while server middleware and RLS validate access.
 - Room launches share StartSessionDialog so dashboard imports and question-editor launches use the same save/create flow.
 - Guest roles and seat limits are assigned atomically by join_session_as under a room row lock; spectators are read-only and only hosts manage session lifecycle.
+- Common Python imports are supplied by the execution wrapper after module docstrings and future directives; editable starter templates also include them, so saved user code is never rewritten.

@@ -1,11 +1,11 @@
 # Roadmap
 - [x] Build Interview Studio (auth, dashboard, question editor + AI, room, timers, snapshots)
 - [x] Homepage: replace hero/features with a plain "How it works"
-- [ ] Runner: direct CE default, sequential paced execution, graceful fallback and clear errors
-- [ ] Session start: paste and AI reformat, optional question-bank save
-- [ ] Sign-in: persisted session navigation, smart logo and auth forwarding
-- [ ] Verify saved questions, both room modes and code execution
-- [ ] Invite joining: choose interviewee (maximum 1) or spectator (maximum 5), enforced safely
-- [ ] Sessions: host archive/restore and delete with confirmation
-- [ ] Freeform: code-style question text, Markdown, optional AI reformat
-- [ ] Starter code: common standard imports, including Python sys, with runnable stdin scaffold
+- [x] Runner: direct CE default, sequential paced execution, graceful fallback and clear errors
+- [x] Session start: paste and AI reformat, optional question-bank save
+- [x] Sign-in: persisted session navigation, smart logo and auth forwarding
+- [x] Verify saved questions, both room modes and code execution
+- [x] Invite joining: choose interviewee (maximum 1) or spectator (maximum 5), enforced safely
+- [x] Sessions: host archive/restore and delete with confirmation
+- [x] Freeform: code-style question text, Markdown, optional AI reformat
+- [x] Starter code: common standard imports, including Python sys, with runnable stdin scaffold

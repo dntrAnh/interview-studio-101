@@ -20,6 +20,7 @@ import { reviewSubmission, type CodeReview } from "@/lib/ai.functions";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
 import { useIsDark } from "@/lib/theme";
+import { GUEST_SEATS, canEditRoom } from "@/lib/room-access";
 
 const CollabEditor = lazy(() => import("@/components/CollabEditor"));
 
@@ -65,7 +66,7 @@ function SessionPage() {
     return (
       <div className="grid min-h-screen place-items-center text-center">
         <div className="space-y-4"><h1 className="font-display text-xl">Join mock interview</h1>
-          <div className="flex flex-wrap justify-center gap-3"><Button disabled={joining} onClick={() => join("interviewee")}>Interviewee (1 seat)</Button><Button variant="outline" disabled={joining} onClick={() => join("spectator")}>Spectator (5 seats)</Button></div>
+          <div className="flex flex-wrap justify-center gap-3"><Button disabled={joining} onClick={() => join("interviewee")}>Interviewee ({GUEST_SEATS.interviewee} seat)</Button><Button variant="outline" disabled={joining} onClick={() => join("spectator")}>Spectator ({GUEST_SEATS.spectator} seats)</Button></div>
           <Button asChild className="mt-4" variant="outline"><Link to="/dashboard">Back to dashboard</Link></Button></div>
       </div>
     );
@@ -81,7 +82,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const isHost = s.host_id === userId;
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
   const role = s.mode === "solo" ? "solo" : isHost ? "interviewer" : guestRole ?? "interviewee";
-  const spectator = role === "spectator";
+  const spectator = !canEditRoom(role);
   const initial: SharedState = {
     language: s.language,
     hintsVisible: s.hints_visible,

@@ -8,6 +8,7 @@ import { AppHeader } from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { type QuestionData } from "@/lib/types";
 import { StartSessionDialog } from "@/components/StartSessionDialog";
+import { canManageRoom } from "@/lib/room-access";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
@@ -56,6 +57,7 @@ function Dashboard() {
   });
 
   async function manageSession(id: string, action: "archive" | "restore" | "delete") {
+    if (!canManageRoom(sessions.data?.some(s => s.id === id && s.host_id === user.id) ?? false)) return;
     if (action === "delete" && !confirm("Delete this session permanently? Saved snapshots will remain.")) return;
     const result = action === "delete"
       ? await supabase.from("sessions").delete().eq("id", id).eq("host_id", user.id)
