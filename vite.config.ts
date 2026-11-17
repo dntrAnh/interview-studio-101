@@ -15,4 +15,12 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    resolve: {
+      alias: [
+        // y-monaco imports monaco's old deep path, which monaco-editor's exports map no longer exposes.
+        { find: /^monaco-editor\/esm\/vs\/(.*)$/, replacement: "monaco-editor/$1" },
+      ],
+    },
+  },
 });
