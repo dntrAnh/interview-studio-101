@@ -70,8 +70,7 @@ function SessionPage() {
     else await session.refetch();
     setJoining(false);
   }
-  if (!session.data?.session) return <div className="grid min-h-screen place-items-center text-center"><div className="space-y-4"><h1 className="font-display text-xl">Room unavailable</h1><Button asChild variant="outline"><Link to="/dashboard">Back to dashboard</Link></Button></div></div>;
-  if (session.data.session.host_id !== user.id && !session.data.role && session.data.session.status === "active")
+  if (!session.data?.session || (session.data.session.host_id !== user.id && !session.data.role && session.data.session.status === "active"))
     return (
       <div className="grid min-h-screen place-items-center text-center">
         <div className="space-y-4"><h1 className="font-display text-xl">Join mock interview</h1>
