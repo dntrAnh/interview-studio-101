@@ -1,12 +1,9 @@
-import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { toast } from "sonner";
 import { Archive, ArchiveRestore, Trash2, Camera, FileCode2, Plus, Timer, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Label } from "@/components/ui/label";
 import { AppHeader } from "@/components/AppHeader";
 import { supabase } from "@/integrations/supabase/client";
 import { type QuestionData } from "@/lib/types";
@@ -30,7 +27,6 @@ const fmtDate = (d: string) => new Date(d).toLocaleString(undefined, { dateStyle
 
 function Dashboard() {
   const { user } = Route.useRouteContext();
-  const navigate = useNavigate();
   const [startMode, setStartMode] = useState<"solo" | "mock" | null>(null);
   const [showArchived, setShowArchived] = useState(false);
 
@@ -113,7 +109,7 @@ function Dashboard() {
                   <Link to="/session/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-muted">
                     {s.mode === "mock" ? <Users className="h-4 w-4 text-accent" /> : <Timer className="h-4 w-4 text-primary" />}
                     <span className="flex-1 truncate">{s.title || "Untitled"}</span>
-                    <span className="font-mono text-xs text-muted-foreground">{s.host_id === user.id ? "host" : "guest"} · {fmtDate(s.created_at)}</span>
+                    <span className="hidden font-mono text-xs text-muted-foreground sm:block">{s.host_id === user.id ? "host" : "guest"} · {fmtDate(s.created_at)}</span>
                   </Link>
                   {s.host_id === user.id && <div className="flex shrink-0 pr-2"><Button variant="ghost" size="icon" title={showArchived ? "Restore session" : "Archive session"} aria-label={showArchived ? "Restore session" : "Archive session"} onClick={() => manageSession(s.id, showArchived ? "restore" : "archive")}>{showArchived ? <ArchiveRestore /> : <Archive />}</Button><Button variant="ghost" size="icon" title="Delete session" aria-label="Delete session" onClick={() => manageSession(s.id, "delete")}><Trash2 /></Button></div>}
                 </li>

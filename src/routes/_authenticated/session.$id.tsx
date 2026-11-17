@@ -74,7 +74,7 @@ function SessionPage() {
 
 type SessionRow = Database["public"]["Tables"]["sessions"]["Row"];
 
-function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string; userId: string; guestRole?: string }) {
+function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string; userId: string; guestRole?: string | undefined }) {
   const navigate = useNavigate();
   const dark = useIsDark();
   const run = useServerFn(runCode);
@@ -242,7 +242,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
         <ResizablePanel defaultSize="60%" minSize="30%">
           <div className="flex h-full flex-col">
               <div className="flex min-h-0 flex-1 flex-col">
-                <div className="flex items-center gap-2 border-b bg-panel px-3 py-1.5">
+                <div className="flex flex-wrap items-center gap-2 border-b bg-panel px-3 py-1.5">
                   <Select value={state.language} onValueChange={changeLanguage} disabled={spectator}>
                     <SelectTrigger className="h-8 w-40" aria-label="Language"><SelectValue /></SelectTrigger>
                     <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>)}</SelectContent>

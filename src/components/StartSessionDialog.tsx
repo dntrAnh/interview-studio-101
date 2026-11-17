@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
@@ -17,6 +17,8 @@ import { assistQuestion } from "@/lib/ai.functions";
 import { emptyQuestion, type QuestionData } from "@/lib/types";
 import { importedQuestion } from "@/lib/question-patch";
 import { Input } from "@/components/ui/input";
+import { useIsDark } from "@/lib/theme";
+const QuestionTextEditor = lazy(() => import("./CollabEditor").then(m => ({ default: m.QuestionTextEditor })));
 
 export function StartSessionDialog({ mode, onClose, userId, questions, initialQuestion }: {
   mode: "solo" | "mock"; onClose: () => void; userId: string;
@@ -25,6 +27,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
   const navigate = useNavigate();
   const qc = useQueryClient();
   const assist = useServerFn(assistQuestion);
+  const dark = useIsDark();
   const [source, setSource] = useState("bank");
   const [questionId, setQuestionId] = useState("blank");
   const [pasted, setPasted] = useState("");
@@ -69,7 +72,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
   return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
     <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader><DialogTitle>{mode === "solo" ? "Practice solo" : "Start a mock interview"}</DialogTitle></DialogHeader>
-      {initialQuestion ? <QuestionView q={initialQuestion} /> : <Tabs value={source} onValueChange={setSource}>
+      {initialQuestion ? <QuestionView q={initialQuestion} /> : <Tabs value={source} onValueChange={v => { setSource(v); setParsed(null); setSavedId(null); }}>
         <TabsList className="flex h-auto w-full flex-wrap"><TabsTrigger value="bank">Question bank</TabsTrigger><TabsTrigger value="free">Freeform</TabsTrigger><TabsTrigger value="paste"><ClipboardPaste /> Paste & AI</TabsTrigger></TabsList>
         <TabsContent value="bank" className="space-y-2">
           <Label>Question</Label><Select value={questionId} onValueChange={setQuestionId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
@@ -80,7 +83,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
         <TabsContent value="free" className="space-y-4">
           <Label htmlFor="free-title">Title</Label><Input id="free-title" value={freeTitle} onChange={e => setFreeTitle(e.target.value)} />
           <Tabs value={freeFormat} onValueChange={v => { setFreeFormat(v); setParsed(null); }}><TabsList><TabsTrigger value="markdown">Markdown</TabsTrigger><TabsTrigger value="code">Code editor</TabsTrigger></TabsList></Tabs>
-          <Label htmlFor="free-question">Question</Label><Textarea id="free-question" className="min-h-48 whitespace-pre font-mono text-sm" spellCheck={false} value={freeText} onChange={e => { setFreeText(e.target.value); setParsed(null); setSavedId(null); }} />
+          <Label htmlFor="free-question">Question</Label>{freeFormat === "code" ? <Suspense fallback={<p className="text-muted-foreground">Loading editor…</p>}><QuestionTextEditor value={freeText} dark={dark} onChange={v => { setFreeText(v); setParsed(null); setSavedId(null); }} /></Suspense> : <Textarea id="free-question" className="min-h-48 font-mono text-sm" spellCheck={false} value={freeText} onChange={e => { setFreeText(e.target.value); setParsed(null); setSavedId(null); }} />}
           <Button variant="outline" disabled={!!busy || !freeText.trim()} onClick={parse}><Sparkles />{busy === "parse" ? "Formatting…" : "AI Reformat"}</Button>
           {parsed && <QuestionView q={parsed} />}
           <div className="flex items-center gap-2"><Checkbox id="free-save-bank" checked={saveBank} onCheckedChange={v => setSaveBank(v === true)} /><Label htmlFor="free-save-bank">Save to my question bank</Label></div>

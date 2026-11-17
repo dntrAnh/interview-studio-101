@@ -17,7 +17,7 @@ export function runnerMessage(status: number, body: string, rapid: boolean) {
 
 export async function executeTests(options: {
   languageId: number; code: string; tests: TestCase[]; customInput?: string;
-  url?: string; key?: string; fetcher?: typeof fetch; pause?: (ms: number) => Promise<void>;
+  url?: string | undefined; key?: string | undefined; fetcher?: typeof fetch; pause?: (ms: number) => Promise<void>;
 }) {
   const fetcher = options.fetcher ?? fetch;
   const pause = options.pause ?? ((ms) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
