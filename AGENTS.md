@@ -38,6 +38,8 @@ use the editor.
 - The Python execution wrapper supplies only sys after docstrings and future directives; other imports stay user-managed and saved code is never rewritten.
 - Mock feedback uses insert-only database rows with server timestamps and host-only inserts; Realtime re-fetches keep all readers synchronized without trusting broadcast authors.
 - Session history is recorded by a participant-insert trigger; history grants read access only, while current participant rows still control seats and editing.
+- Guests reopening inactive mock rooms use saved code without live broadcast synchronization; both UI controls and database writes prohibit guest editing after closure.
+- Shared timer transitions are broadcast with absolute timestamps and persisted on the room; countdown displays derive time locally so peers and refreshes keep the same deadline.
 - AI results are schema-validated before display; imported problems retain explicit executable I/O contracts and generated tests never claim to be official hidden tests.
 - Test-only submission persists code, language, added cases and runner results on the session; AI review remains a separate explicit action.
 - Imported Python starter code carries a parameterized problem function and a matching stdin/stdout wrapper through both question editing and room launch.

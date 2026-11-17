@@ -2,6 +2,13 @@ import { describe, expect, it, vi } from "vitest";
 import { DIRECT_CE, executeTests, runnerMessage } from "@/lib/judge0.server";
 
 describe("runner", () => {
+  it("runs mock whiteboard code with custom stdin and returns actual stdout", async () => {
+    const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ stdout: btoa("42\n"), status: { id: 3, description: "Accepted" } })));
+    const r = await executeTests({ code: "print(int(input()) * 2)", languageId: 71, tests: [], customInput: "21\n", fetcher });
+    expect(JSON.parse(fetcher.mock.calls[0]?.[1].body).stdin).toBe(btoa("21\n"));
+    expect(r.results[0]?.stdout).toBe("42\n");
+    expect(r.results[0]?.expected).toBeNull();
+  });
   it("uses direct CE without an API key", async () => {
     const fetcher = vi.fn().mockResolvedValue(new Response(JSON.stringify({ stdout: btoa("5\n"), status: { id: 3 } })));
     const r = await executeTests({ code: "print(5)", languageId: 71, tests: [{ input: "", expected: "5" }], fetcher });

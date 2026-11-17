@@ -134,22 +134,26 @@ function Dashboard() {
           </div>
         </section>
 
-        <div className="grid gap-10 lg:grid-cols-2">
+        <div className="space-y-10">
           <section>
             <div className="mb-3 flex items-center justify-between"><h2 className="font-display text-lg font-semibold">Sessions</h2><Button size="sm" variant="ghost" onClick={() => setShowArchived(!showArchived)}><Archive />{showArchived ? "Show recent" : "Archived"}</Button></div>
             {sessions.data?.length === 0 && <Empty text="No sessions yet." />}
+            <div className="grid gap-6 md:grid-cols-2">
+            {(["solo", "mock"] as const).map(mode => <div key={mode} className="min-w-0"><h3 className="mb-3 flex items-center gap-2 font-display font-semibold">{mode === "solo" ? <Timer className="h-4 w-4 text-primary" /> : <Users className="h-4 w-4 text-accent" />}{mode === "solo" ? "Solo practice" : "Mock interviews"}</h3>
             <ul className="divide-y rounded-lg border bg-card">
-              {sessions.data?.filter(s => (s.status === "archived") === showArchived).map((s) => (
+              {sessions.data?.filter(s => s.mode === mode && (s.status === "archived") === showArchived).map((s) => (
                 <li key={s.id} className="flex items-center">
                   <Link to="/session/$id" params={{ id: s.id }} className="flex min-w-0 flex-1 items-center gap-3 px-4 py-3 hover:bg-muted">
                     {s.mode === "mock" ? <Users className="h-4 w-4 text-accent" /> : <Timer className="h-4 w-4 text-primary" />}
-                    <span className="flex-1 truncate">{s.title || "Untitled"}</span>
-                    <span className="hidden font-mono text-xs text-muted-foreground sm:block">{s.host_id === user.id ? "host" : "guest"} · {s.status} · {fmtDate(s.created_at)}</span>
+                    <span className="min-w-0 flex-1"><span className="block truncate">{s.title || "Untitled"}</span><span className="mt-1 block font-mono text-xs text-muted-foreground">{s.host_id === user.id ? "host" : "guest"} · {s.status} · {fmtDate(s.created_at)}</span></span>
                   </Link>
                   {s.host_id === user.id && <div className="flex shrink-0 pr-2"><Button variant="ghost" size="icon" title={showArchived ? "Restore session" : "Archive session"} aria-label={showArchived ? "Restore session" : "Archive session"} onClick={() => manageSession(s.id, showArchived ? "restore" : "archive")}>{showArchived ? <ArchiveRestore /> : <Archive />}</Button><Button variant="ghost" size="icon" title="Delete session" aria-label="Delete session" onClick={() => manageSession(s.id, "delete")}><Trash2 /></Button></div>}
                 </li>
               ))}
             </ul>
+            {sessions.data?.filter(s => s.mode === mode && (s.status === "archived") === showArchived).length === 0 && <p className="py-4 text-sm text-muted-foreground">No {showArchived ? "archived " : ""}{mode === "solo" ? "solo practice sessions" : "mock interviews"} yet.</p>}
+            </div>)}
+            </div>
           </section>
           <section>
             <h2 className="mb-3 font-display text-lg font-semibold">Snapshots</h2>

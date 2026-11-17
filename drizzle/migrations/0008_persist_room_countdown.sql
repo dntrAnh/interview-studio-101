@@ -1,0 +1,1 @@
+ALTER TABLE public.sessions ADD COLUMN timer_state jsonb DEFAULT NULL;

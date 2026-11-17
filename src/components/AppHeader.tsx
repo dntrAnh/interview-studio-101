@@ -32,7 +32,7 @@ export function AppHeader({ children }: { children?: ReactNode; signedIn?: boole
   return (
     <header className="flex h-14 shrink-0 items-center gap-3 border-b bg-panel px-4">
       <Logo />
-      <div className="flex flex-1 items-center gap-2 overflow-x-auto">{children}</div>
+      <div className="flex min-w-0 flex-1 items-center gap-2 overflow-x-auto">{children}</div>
       <ThemeToggle />
       {user && <DropdownMenu>
         <DropdownMenuTrigger asChild><Button variant="ghost" size="icon" className="shrink-0" title="Profile" aria-label="Profile"><UserRound /></Button></DropdownMenuTrigger>

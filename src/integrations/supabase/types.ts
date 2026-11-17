@@ -173,6 +173,7 @@ export type Database = {
           mode: string
           question: Json
           status: string
+          timer_state: Json | null
           title: string
           updated_at: string
         }
@@ -187,6 +188,7 @@ export type Database = {
           mode?: string
           question?: Json
           status?: string
+          timer_state?: Json | null
           title?: string
           updated_at?: string
         }
@@ -201,6 +203,7 @@ export type Database = {
           mode?: string
           question?: Json
           status?: string
+          timer_state?: Json | null
           title?: string
           updated_at?: string
         }
