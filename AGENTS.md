@@ -30,7 +30,7 @@ use the editor.
 <!-- LOVABLE:END -->
 
 - Live collaboration uses Yjs synced over Cloud Realtime broadcast (`src/lib/useRoom.ts`); there is no Yjs server, so peers answer `sync-req` and the DB `sessions.code` is only a seed/backup.
-- Code execution uses authenticated `runCode` with direct Judge0 CE only and sequential paced submissions; stdin→stdout pairs keep languages consistent without RapidAPI credentials.
+- Python runs in-browser via a Pyodide Web Worker (`src/lib/python-runner.ts`) for instant results; other languages use authenticated `runCode` with direct Judge0 CE and sequential paced submissions.
 - Snapshots prohibit updates but allow owner-scoped deletion; their captured contents stay immutable.
 - Root session context derives from the persisted auth session and the single root identity listener; cached route access is only a UI gate, while server middleware and RLS validate access.
 - Room launches share StartSessionDialog so dashboard imports and question-editor launches use the same save/create flow.

@@ -15,8 +15,9 @@ import { supabase } from "@/integrations/supabase/client";
 import type { Database } from "@/integrations/supabase/types";
 import { OutputPanel } from "@/components/OutputPanel";
 import { useRoom, type SharedState } from "@/lib/useRoom";
-import { LANGUAGES, getLanguage } from "@/lib/languages";
+import { LANGUAGES, getLanguage, withStandardImports } from "@/lib/languages";
 import { runCode } from "@/lib/run.functions";
+import { runPythonLocally, warmPython } from "@/lib/python-runner";
 import { reviewSubmission, type CodeReview } from "@/lib/ai.functions";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
@@ -108,6 +109,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   };
   const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, pastRoom, initialCode: pastRoom ? s.code : s.code || (runOnly ? s.language === "python" ? "import sys\n\n" : "\n" : question.starter_code[s.language] || getLanguage(s.language).starter) });
   const { state, setState, ytext } = room;
+  useEffect(() => { if (state.language === "python") warmPython(); }, [state.language]);
   async function rename() {
     const title = interviewName(name, question.title);
     const { error } = await supabase.from("sessions").update({ title }).eq("id", s.id).eq("host_id", userId);
@@ -186,7 +188,9 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     try {
       const code = ytext.toString();
       const tests = runOnly ? [] : submit ? [...question.test_cases, ...addedTests] : question.test_cases;
-      const res = await run({ data: { language: state.language, code, tests, customInput: stdin } });
+      const res = state.language === "python"
+        ? await runPythonLocally(withStandardImports(code, "python"), tests, stdin)
+        : await run({ data: { language: state.language, code, tests, customInput: stdin } });
       setState({ results: res.results, runError: res.error });
       if (submit || runOnly) {
         const { error } = await supabase.from("sessions").update({ code, language: state.language, last_submission: { code, language: state.language, addedTests, results: res.results, error: res.error, submittedAt: new Date().toISOString() } }).eq("id", s.id);
