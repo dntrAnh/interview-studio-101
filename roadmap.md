@@ -1,4 +1,5 @@
 # Roadmap
+- [ ] Closed mock rooms: read-only guest access and verify persistent history for both guest roles
 - [x] Build Interview Studio (auth, dashboard, question editor + AI, room, timers, snapshots)
 - [x] Homepage: replace hero/features with a plain "How it works"
 - [x] Runner: direct CE default, sequential paced execution, graceful fallback and clear errors
