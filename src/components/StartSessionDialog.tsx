@@ -70,8 +70,9 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
     finally { setBusy(null); }
   }
   return <Dialog open onOpenChange={open => { if (!open && !busy) onClose(); }}>
-    <DialogContent className="max-h-[90dvh] overflow-y-auto sm:max-w-2xl">
-      <DialogHeader><DialogTitle>{mode === "solo" ? "Practice solo" : "Start a mock interview"}</DialogTitle></DialogHeader>
+    <DialogContent className="flex max-h-[90dvh] w-[calc(100%-2rem)] min-w-0 flex-col overflow-hidden p-0 sm:max-w-2xl">
+      <DialogHeader className="shrink-0 border-b px-6 py-5 pr-12"><DialogTitle>{mode === "solo" ? "Practice solo" : "Start a mock interview"}</DialogTitle></DialogHeader>
+      <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
       {initialQuestion ? <QuestionView q={initialQuestion} /> : <Tabs value={source} onValueChange={v => { setSource(v); setParsed(null); setSavedId(null); }}>
         <TabsList className="flex h-auto w-full flex-wrap"><TabsTrigger value="bank">Question bank</TabsTrigger><TabsTrigger value="free">Freeform</TabsTrigger><TabsTrigger value="paste"><ClipboardPaste /> Paste & AI</TabsTrigger></TabsList>
         <TabsContent value="bank" className="space-y-2">
@@ -96,7 +97,8 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
           <div className="flex items-center gap-2"><Checkbox id="save-bank" checked={saveBank} onCheckedChange={v => setSaveBank(v === true)} /><Label htmlFor="save-bank">Save to my question bank</Label></div>
         </TabsContent>
       </Tabs>}
-      <Button disabled={!!busy || (!initialQuestion && source === "paste" && !parsed)} onClick={create}>{busy === "create" ? "Opening…" : "Open room"}</Button>
+      </div>
+      <div className="shrink-0 border-t px-6 py-4"><Button className="w-full" disabled={!!busy || (!initialQuestion && source === "paste" && !parsed)} onClick={create}>{busy === "create" ? "Opening…" : "Open room"}</Button></div>
     </DialogContent>
   </Dialog>;
 }
