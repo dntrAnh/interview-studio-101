@@ -10,7 +10,7 @@ const VERDICT: Record<CodeReview["verdict"], { label: string; cls: string }> = {
 export function ReviewDialog({ review, loading, open, onOpenChange }: { review: CodeReview | null; loading: boolean; open: boolean; onOpenChange: (o: boolean) => void }) {
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[85vh] max-w-2xl overflow-y-auto">
+      <DialogContent className="max-h-[85dvh] w-[calc(100%-2rem)] min-w-0 overflow-y-auto sm:max-w-2xl [overflow-wrap:anywhere]">
         <DialogHeader><DialogTitle>AI code review</DialogTitle></DialogHeader>
         {loading && <p className="font-mono text-sm text-muted-foreground">reviewing your solution…</p>}
         {!loading && review && (

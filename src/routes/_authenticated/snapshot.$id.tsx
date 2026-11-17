@@ -28,6 +28,7 @@ type SnapData = {
   results: RunResult[] | null; runError: string | null; hintsVisible: boolean;
   timer: { kind: string; elapsedMs: number; durationMs: number };
   participants: { name: string; role: string }[]; savedAt: string;
+  feedback?: { body: string; created_at: string }[];
 };
 
 function SnapshotPage() {
@@ -69,6 +70,7 @@ function SnapshotPage() {
               {question.complexity && <p className="mt-2 rounded bg-muted px-2 py-1 font-mono text-xs">Complexity: {question.complexity}</p>}
             </div>
           )}
+          {d.feedback && d.feedback.length > 0 && <section className="space-y-3 border-t pt-4"><h2 className="font-display font-semibold">Interviewer feedback</h2>{d.feedback.map((note, index) => <div key={index} className="border-l-2 border-primary pl-3"><time dateTime={note.created_at} className="font-mono text-xs text-muted-foreground">{new Date(note.created_at).toLocaleString()}</time><p className="mt-1 whitespace-pre-wrap text-sm [overflow-wrap:anywhere]">{note.body}</p></div>)}</section>}
         </div>
         <div className="flex flex-col">
           <pre className="flex-1 overflow-auto bg-card p-4 font-mono text-sm leading-6"><code>{d.code || "(empty)"}</code></pre>

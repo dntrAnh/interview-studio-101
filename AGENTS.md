@@ -36,3 +36,6 @@ use the editor.
 - Room launches share StartSessionDialog so dashboard imports and question-editor launches use the same save/create flow.
 - Guest roles and seat limits are assigned atomically by join_session_as under a room row lock; spectators are read-only and only hosts manage session lifecycle.
 - Common Python imports are supplied by the execution wrapper after module docstrings and future directives; editable starter templates also include them, so saved user code is never rewritten.
+- Mock feedback uses insert-only database rows with server timestamps and host-only inserts; Realtime re-fetches keep all readers synchronized without trusting broadcast authors.
+- Session history is recorded by a participant-insert trigger; history grants read access only, while current participant rows still control seats and editing.
+- AI results are schema-validated before display; imported problems retain explicit executable I/O contracts and generated tests never claim to be official hidden tests.

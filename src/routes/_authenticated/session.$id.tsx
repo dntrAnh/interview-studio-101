@@ -1,5 +1,5 @@
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
@@ -21,6 +21,8 @@ import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
 import { useIsDark } from "@/lib/theme";
 import { GUEST_SEATS, canEditRoom } from "@/lib/room-access";
+import { InterviewFeedback } from "@/components/InterviewFeedback";
+import { canPostFeedback } from "@/lib/interview-feedback";
 
 const CollabEditor = lazy(() => import("@/components/CollabEditor"));
 
@@ -62,7 +64,7 @@ function SessionPage() {
     else await session.refetch();
     setJoining(false);
   }
-  if (!session.data?.session)
+  if (!session.data?.session || (session.data.session.host_id !== user.id && !session.data.role))
     return (
       <div className="grid min-h-screen place-items-center text-center">
         <div className="space-y-4"><h1 className="font-display text-xl">Join mock interview</h1>
@@ -77,6 +79,8 @@ type SessionRow = Database["public"]["Tables"]["sessions"]["Row"];
 
 function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string; userId: string; guestRole?: string | undefined }) {
   const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [ending, setEnding] = useState(false);
   const dark = useIsDark();
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
@@ -158,6 +162,8 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   }
 
   async function snapshot() {
+    const { data: feedback, error: feedbackError } = s.mode === "mock" ? await supabase.from("session_feedback").select("body,created_at").eq("session_id", s.id).order("created_at") : { data: [], error: null };
+    if (feedbackError) { toast.error("Could not load feedback for this snapshot. Please try again."); return; }
     const { error, data } = await supabase.from("snapshots").insert({
       session_id: s.id,
       owner_id: userId,
@@ -173,6 +179,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
         timer: { kind: state.timer.kind, elapsedMs: elapsedMs(state.timer), durationMs: state.timer.durationMs },
         participants: room.peers.map((p) => ({ name: p.name, role: p.role })),
         savedAt: new Date().toISOString(),
+        feedback: feedback ?? [],
       },
     }).select("id").single();
     if (error) { toast.error(error.message); return; }
@@ -180,9 +187,19 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   }
 
   async function endSession() {
-    if (isHost) await supabase.from("sessions").update({ status: "ended", code: ytext.toString() }).eq("id", s.id);
-    else await supabase.from("session_participants").delete().eq("session_id", s.id).eq("user_id", userId);
-    navigate({ to: "/dashboard" });
+    if (ending) return;
+    setEnding(true);
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    try {
+      const result = isHost
+        ? await supabase.from("sessions").update({ status: "ended", code: ytext.toString(), language: state.language, updated_at: new Date().toISOString() }).eq("id", s.id)
+        : await supabase.from("session_participants").delete().eq("session_id", s.id).eq("user_id", userId);
+      if (result.error) throw result.error;
+      await qc.invalidateQueries({ queryKey: ["sessions"] });
+      qc.removeQueries({ queryKey: ["session", s.id], exact: true });
+      await navigate({ to: "/dashboard", replace: true });
+    } catch { toast.error("Could not leave the room. You are still signed in; please try again."); }
+    finally { setEnding(false); }
   }
 
   const canSeeHints = isHost || state.hintsVisible;
@@ -208,7 +225,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
             </Button>
           )}
           <Button size="sm" variant="outline" onClick={snapshot}><Camera /> Snapshot</Button>
-          <Button size="sm" variant="ghost" onClick={endSession}><LogOut /> {isHost ? "End" : "Leave"}</Button>
+          <Button size="sm" variant="ghost" onClick={endSession} disabled={ending}>{ending ? "Saving…" : isHost ? "End" : "Leave"}</Button>
         </div>
       </AppHeader>
 
@@ -237,6 +254,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                 )}
               </div>
             )}
+            {s.mode === "mock" && <InterviewFeedback sessionId={s.id} userId={userId} canPost={canPostFeedback(s.mode, isHost)} />}
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
