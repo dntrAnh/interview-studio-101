@@ -7,3 +7,4 @@
 - [ ] Verify saved questions, both room modes and code execution
 - [ ] Invite joining: choose interviewee (maximum 1) or spectator (maximum 5), enforced safely
 - [ ] Sessions: host archive/restore and delete with confirmation
+- [ ] Freeform: code-style question text, Markdown, optional AI reformat
