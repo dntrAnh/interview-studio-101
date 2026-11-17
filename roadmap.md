@@ -8,3 +8,4 @@
 - [ ] Invite joining: choose interviewee (maximum 1) or spectator (maximum 5), enforced safely
 - [ ] Sessions: host archive/restore and delete with confirmation
 - [ ] Freeform: code-style question text, Markdown, optional AI reformat
+- [ ] Starter code: common standard imports, including Python sys, with runnable stdin scaffold
