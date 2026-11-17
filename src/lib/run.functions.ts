@@ -1,6 +1,6 @@
 import { createServerFn } from "@tanstack/react-start";
 import { requireSupabaseAuth } from "@/integrations/supabase/auth-middleware";
-import { getLanguage } from "./languages";
+import { getLanguage, withStandardImports } from "./languages";
 import type { TestCase } from "./types";
 
 export const runCode = createServerFn({ method: "POST" })
@@ -13,5 +13,5 @@ export const runCode = createServerFn({ method: "POST" })
     const { executeTests } = await import("./judge0.server");
     const key = process.env["JUDGE0_API_KEY"];
     const lang = getLanguage(data.language);
-    return executeTests({ ...data, languageId: lang.judge0, key, url: process.env["JUDGE0_URL"] });
+    return executeTests({ ...data, code: withStandardImports(data.code, data.language), languageId: lang.judge0, key, url: process.env["JUDGE0_URL"] });
   });
