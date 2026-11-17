@@ -22,6 +22,7 @@ export function AppHeader({ children, signedIn = true }: { children?: ReactNode;
   const qc = useQueryClient();
   const navigate = useNavigate();
   async function signOut() {
+    if (!confirm("Sign out of Interview Studio? This is different from ending or leaving a room.")) return;
     await qc.cancelQueries();
     qc.clear();
     await supabase.auth.signOut();
@@ -33,8 +34,8 @@ export function AppHeader({ children, signedIn = true }: { children?: ReactNode;
       <div className="flex flex-1 items-center gap-2 overflow-x-auto">{children}</div>
       <ThemeToggle />
       {(signedIn || user) && (
-        <Button variant="ghost" size="icon" aria-label="Sign out" onClick={signOut}>
-          <LogOut />
+        <Button variant="ghost" size="sm" className="shrink-0 border-l" title="Sign out of your account" aria-label="Sign out" onClick={signOut}>
+          <LogOut /> Sign out
         </Button>
       )}
     </header>
