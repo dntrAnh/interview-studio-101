@@ -20,7 +20,7 @@ import { reviewSubmission, type CodeReview } from "@/lib/ai.functions";
 import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
 import { useIsDark } from "@/lib/theme";
-import { GUEST_SEATS, canEditRoom } from "@/lib/room-access";
+import { GUEST_SEATS, canEditRoom, roomExecutionMode } from "@/lib/room-access";
 import { InterviewFeedback } from "@/components/InterviewFeedback";
 import { canPostFeedback } from "@/lib/interview-feedback";
 import { SubmissionTests } from "@/components/SubmissionTests";
@@ -87,6 +87,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const dark = useIsDark();
   const run = useServerFn(runCode);
   const isHost = s.host_id === userId;
+  const runOnly = roomExecutionMode(s.mode) === "run-only";
   const question: QuestionData = { ...emptyQuestion(), ...(s.question as Partial<QuestionData>) };
   const saved = savedSubmissionSchema.safeParse(s.last_submission);
   const [addedTests, setAddedTests] = useState<TestCase[]>(saved.success ? saved.data.addedTests : []);
@@ -99,7 +100,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     results: saved.success ? saved.data.results : null,
     runError: saved.success ? saved.data.error : null,
   };
-  const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, initialCode: s.code || question.starter_code[s.language] || getLanguage(s.language).starter });
+  const room = useRoom({ sessionId: s.id, me: { id: userId, name: myName, role }, initial, initialCode: s.code || (runOnly ? s.language === "python" ? "import sys\n\n" : "\n" : question.starter_code[s.language] || getLanguage(s.language).starter) });
   const { state, setState, ytext } = room;
   const [running, setRunning] = useState(false);
   const [stdin, setStdin] = useState("");
@@ -110,6 +111,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const [reviewResult, setReviewResult] = useState<CodeReview | null>(null);
 
   async function onReview() {
+    if (runOnly || spectator) return;
     const code = ytext.toString();
     if (!code.trim()) { toast.error("Write some code first."); return; }
     setReviewOpen(true); setReviewing(true); setReviewResult(null);
@@ -148,17 +150,18 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
     if (isTemplate) {
       ytext.doc?.transact(() => {
         ytext.delete(0, ytext.length);
-        ytext.insert(0, question.starter_code[lang] || getLanguage(lang).starter);
+        ytext.insert(0, runOnly ? lang === "python" ? "import sys\n\n" : "\n" : question.starter_code[lang] || getLanguage(lang).starter);
       });
     }
     setState({ language: lang });
   }
 
   async function onRun(submit = false) {
+    if (spectator || (submit && runOnly)) return;
     setRunning(true);
     try {
       const code = ytext.toString();
-      const tests = submit ? [...question.test_cases, ...addedTests] : question.test_cases;
+      const tests = runOnly ? [] : submit ? [...question.test_cases, ...addedTests] : question.test_cases;
       const res = await run({ data: { language: state.language, code, tests, customInput: stdin } });
       setState({ results: res.results, runError: res.error });
       if (submit) {
@@ -267,7 +270,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
               </div>
             )}
             {s.mode === "mock" && <InterviewFeedback sessionId={s.id} userId={userId} canPost={canPostFeedback(s.mode, isHost)} />}
-            <SubmissionTests tests={addedTests} onChange={setAddedTests} disabled={spectator || running} />
+            {!runOnly && <SubmissionTests tests={addedTests} onChange={setAddedTests} disabled={spectator || running} />}
           </div>
         </ResizablePanel>
         <ResizableHandle withHandle />
@@ -280,9 +283,9 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                     <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>)}</SelectContent>
                   </Select>
                   <span className="font-mono text-xs text-muted-foreground">{room.ready ? "● live" : "connecting…"}</span>
-                  <Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing || spectator}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
-                  <Button size="sm" variant="outline" onClick={() => onRun(true)} disabled={running || spectator}><Send /> Submit</Button>
-                  <Button size="sm" onClick={() => onRun()} disabled={running || spectator}><Play /> {running ? "Running…" : question.test_cases.length ? "Run tests" : "Run"}</Button>
+                  {!runOnly && <><Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing || spectator}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
+                  <Button size="sm" variant="outline" onClick={() => onRun(true)} disabled={running || spectator}><Send /> Submit</Button></>}
+                  <Button size="sm" className={runOnly ? "ml-auto" : ""} onClick={() => onRun()} disabled={running || spectator}><Play /> {running ? "Running…" : !runOnly && question.test_cases.length ? "Run tests" : "Run"}</Button>
                 </div>
                 <div className="min-h-0 flex-1">
                   {room.ready ? (
@@ -295,7 +298,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                 </div>
               </div>
               <div className="h-60 shrink-0 border-t">
-                <OutputPanel state={state} hasTests={question.test_cases.length + addedTests.length > 0} stdin={stdin} setStdin={setStdin} />
+                <OutputPanel state={state} hasTests={!runOnly && question.test_cases.length + addedTests.length > 0} stdin={stdin} setStdin={setStdin} />
               </div>
           </div>
         </ResizablePanel>

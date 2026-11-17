@@ -82,6 +82,7 @@ function QuestionEditor() {
         ...(Array.isArray(p.hints) && { hints: p.hints.map(String) }),
         ...(typeof p.complexity === "string" && { complexity: p.complexity }),
         ...(Array.isArray(p.test_cases) && { test_cases: p.test_cases.map((t) => ({ input: String(t.input ?? ""), expected: String(t.expected ?? "") })) }),
+        ...(p.starter_code && { starter_code: { ...prev.starter_code, ...p.starter_code } }),
       }));
       toast.success("Suggestion applied — review before saving.");
       if (action === "import") { setPasteOpen(false); setPasted(""); }

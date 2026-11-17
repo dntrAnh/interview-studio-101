@@ -61,7 +61,7 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
         setSavedId(data.id);
         await qc.invalidateQueries({ queryKey: ["questions"] });
       }
-      const { data, error } = await supabase.from("sessions").insert({ host_id: userId, mode, title: question.title, question, code: question.starter_code["python"] ?? "" }).select("id").single();
+      const { data, error } = await supabase.from("sessions").insert({ host_id: userId, mode, title: question.title, question, code: mode === "mock" ? "import sys\n\n" : question.starter_code["python"] ?? "" }).select("id").single();
       if (error) throw error;
       await qc.invalidateQueries({ queryKey: ["sessions"] });
       onClose();
