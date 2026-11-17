@@ -21,6 +21,7 @@ export function QuestionView({ q }: { q: QuestionData }) {
 }
 
 export function RichText({ text }: { text: string }) {
+  if (text.includes("```")) return <div className="space-y-3">{text.split("```").map((part, i) => i % 2 ? <pre key={i} className="overflow-x-auto rounded bg-muted p-3 font-mono text-xs"><code>{part.replace(/^\w*\n/, "")}</code></pre> : <RichText key={i} text={part} />)}</div>;
   const lines = text.split("\n");
   return (
     <div className="space-y-1.5 text-sm leading-relaxed">
