@@ -1,3 +1,4 @@
+import { outputsMatch } from "./output-match";
 import type { RunResult, TestCase } from "./types";
 
 type Raw = { stdout: string; stderr: string; ok: boolean; time: string };
@@ -30,7 +31,7 @@ export function toRunResults(cases: { input: string; expected: string | null }[]
     const c = cases[index]!;
     return { index, input: c.input, expected: c.expected, stdout: r.stdout, stderr: r.stderr,
       status: r.ok ? "Accepted" : "Runtime Error", time: r.time,
-      passed: c.expected === null ? null : r.ok && r.stdout.trim() === c.expected.trim() };
+      passed: c.expected === null ? null : r.ok && outputsMatch(r.stdout, c.expected) };
   });
 }
 

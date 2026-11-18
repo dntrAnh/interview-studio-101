@@ -1,3 +1,4 @@
+import { outputsMatch } from "./output-match";
 import type { RunResult, TestCase } from "./types";
 
 export const DIRECT_CE = "https://ce.judge0.com";
@@ -51,7 +52,7 @@ export async function executeTests(options: {
       if ((j.status?.id ?? 3) <= 2) { error = "The code runner is still processing this submission. Please try again shortly."; break; }
       const stdout = decode(j.stdout);
       const stderr = [decode(j.compile_output), decode(j.stderr), decode(j.message)].filter(Boolean).join("\n");
-      results.push({ index, input: c.input, expected: c.expected, stdout, stderr, status: j.status?.description ?? "Done", passed: c.expected === null ? null : j.status?.id === 3 && stdout.trim() === c.expected.trim(), time: j.time ?? null });
+      results.push({ index, input: c.input, expected: c.expected, stdout, stderr, status: j.status?.description ?? "Done", passed: c.expected === null ? null : j.status?.id === 3 && outputsMatch(stdout, c.expected), time: j.time ?? null });
     } catch { error = "The code runner returned an unreadable response. Please try again."; break; }
   }
   return { ok: error === null, error, results };

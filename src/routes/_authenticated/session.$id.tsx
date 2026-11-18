@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { lazy, Suspense, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
-import { Camera, Eye, EyeOff, Link2, Play, Lightbulb, Sparkles, Send, Pencil } from "lucide-react";
+import { Camera, Eye, EyeOff, Link2, Play, Lightbulb, Send, Pencil } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -18,8 +18,6 @@ import { useRoom, type SharedState } from "@/lib/useRoom";
 import { LANGUAGES, getLanguage, withStandardImports } from "@/lib/languages";
 import { runCode } from "@/lib/run.functions";
 import { runPythonLocally, warmPython } from "@/lib/python-runner";
-import { reviewSubmission, type CodeReview } from "@/lib/ai.functions";
-import { ReviewDialog } from "@/components/ReviewDialog";
 import { elapsedMs, emptyQuestion, type QuestionData } from "@/lib/types";
 import { useIsDark } from "@/lib/theme";
 import { GUEST_SEATS, canEditRoom, isPastGuestRoom, roomExecutionMode } from "@/lib/room-access";
@@ -121,24 +119,6 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
   const [running, setRunning] = useState(false);
   const [stdin, setStdin] = useState("");
   const [showHints, setShowHints] = useState(false);
-  const review = useServerFn(reviewSubmission);
-  const [reviewOpen, setReviewOpen] = useState(false);
-  const [reviewing, setReviewing] = useState(false);
-  const [reviewResult, setReviewResult] = useState<CodeReview | null>(null);
-
-  async function onReview() {
-    if (runOnly || spectator) return;
-    const code = ytext.toString();
-    if (!code.trim()) { toast.error("Write some code first."); return; }
-    setReviewOpen(true); setReviewing(true); setReviewResult(null);
-    try {
-      const res = await review({ data: { question: { ...question, test_cases: [...question.test_cases, ...addedTests] }, code, language: getLanguage(state.language).label } });
-      if (res.ok) setReviewResult(res.review);
-      else { toast.error(res.error); setReviewOpen(false); }
-    } catch {
-      toast.error("Could not get a review."); setReviewOpen(false);
-    } finally { setReviewing(false); }
-  }
 
   // Persist the latest code and settings so the room survives everyone leaving.
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -313,8 +293,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                     <SelectContent>{LANGUAGES.map((l) => <SelectItem key={l.id} value={l.id}>{l.label}</SelectItem>)}</SelectContent>
                   </Select>
                   <span className="font-mono text-xs text-muted-foreground">{pastRoom ? "Past room · read-only" : room.ready ? "● live" : "connecting…"}</span>
-                  {!runOnly && <><Button size="sm" variant="outline" className="ml-auto" onClick={onReview} disabled={reviewing || spectator}><Sparkles /> {reviewing ? "Reviewing…" : "Submit for review"}</Button>
-                  <Button size="sm" variant="outline" onClick={() => onRun(true)} disabled={running || spectator}><Send /> Submit</Button></>}
+                  {!runOnly && <><Button size="sm" variant="outline" className="ml-auto" onClick={() => onRun(true)} disabled={running || spectator}><Send /> Submit</Button></>}
                   <Button size="sm" className={runOnly ? "ml-auto" : ""} onClick={() => onRun()} disabled={running || spectator}><Play /> {running ? "Running…" : !runOnly && question.test_cases.length ? "Run tests" : "Run"}</Button>
                 </div>
                 <div className="min-h-0 flex-1">
@@ -333,7 +312,6 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
           </div>
         </ResizablePanel>
       </ResizablePanelGroup>
-      <ReviewDialog open={reviewOpen} onOpenChange={setReviewOpen} loading={reviewing} review={reviewResult} />
     </div>
   );
 }
