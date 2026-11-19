@@ -1,19 +1,16 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { useEffect, useState } from "react";
 import { toast } from "sonner";
-import { ClipboardPaste, Lightbulb, LayoutList, Plus, Sparkles, Trash2, Wand2, Play } from "lucide-react";
+import { Plus, Trash2, Play } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { AppHeader } from "@/components/AppHeader";
 import { QuestionView } from "@/components/QuestionView";
 import { supabase } from "@/integrations/supabase/client";
-import { assistQuestion, type AssistAction } from "@/lib/ai.functions";
 import { emptyQuestion, type QuestionData } from "@/lib/types";
 import { LANGUAGES } from "@/lib/languages";
 import { StartSessionDialog } from "@/components/StartSessionDialog";
@@ -37,12 +34,9 @@ function QuestionEditor() {
   const { user } = Route.useRouteContext();
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const assist = useServerFn(assistQuestion);
   const isNew = id === "new";
   const [q, setQ] = useState<QuestionData>(emptyQuestion());
-  const [busy, setBusy] = useState<AssistAction | "save" | null>(null);
-  const [pasteOpen, setPasteOpen] = useState(false);
-  const [pasted, setPasted] = useState("");
+  const [busy, setBusy] = useState<"save" | null>(null);
   const [starterLang, setStarterLang] = useState("python");
   const [startMode, setStartMode] = useState<"solo" | "mock" | null>(null);
 
@@ -66,32 +60,6 @@ function QuestionEditor() {
   }, [existing.data]);
 
   const set = <K extends keyof QuestionData>(k: K, v: QuestionData[K]) => setQ((p) => ({ ...p, [k]: v }));
-
-  async function runAssist(action: AssistAction) {
-    if (action !== "import" && !q.description.trim() && !q.title.trim()) { toast.error("Write something first."); return; }
-    setBusy(action);
-    try {
-      const res = await assist({ data: { action, question: q, pasted } });
-      if (!res.ok) { toast.error(res.error); return; }
-      const p = res.patch;
-      setQ((prev) => ({
-        ...prev,
-        ...(typeof p.title === "string" && { title: p.title }),
-        ...(typeof p.difficulty === "string" && { difficulty: p.difficulty }),
-        ...(typeof p.description === "string" && { description: p.description }),
-        ...(Array.isArray(p.hints) && { hints: p.hints.map(String) }),
-        ...(typeof p.complexity === "string" && { complexity: p.complexity }),
-        ...(Array.isArray(p.test_cases) && { test_cases: p.test_cases.map((t) => ({ input: String(t.input ?? ""), expected: String(t.expected ?? "") })) }),
-        ...(p.starter_code && { starter_code: { ...prev.starter_code, ...p.starter_code } }),
-      }));
-      toast.success("Suggestion applied — review before saving.");
-      if (action === "import") { setPasteOpen(false); setPasted(""); }
-    } catch {
-      toast.error("AI request failed.");
-    } finally {
-      setBusy(null);
-    }
-  }
 
   async function save() {
     setBusy("save");
@@ -124,14 +92,6 @@ function QuestionEditor() {
           <Button size="sm" onClick={save} disabled={busy === "save"}>{busy === "save" ? "Saving…" : "Save"}</Button>
         </div>
       </AppHeader>
-
-      <div className="flex flex-wrap gap-2 border-b bg-panel px-4 py-2">
-        <span className="mr-1 flex items-center gap-1 font-mono text-xs text-muted-foreground"><Sparkles className="h-3.5 w-3.5 text-accent" /> AI</span>
-        <Button size="sm" variant="outline" onClick={() => setPasteOpen(true)}><ClipboardPaste /> Import from LeetCode/HackerRank</Button>
-        <Button size="sm" variant="outline" disabled={!!busy} onClick={() => runAssist("phrase")}><Wand2 /> {busy === "phrase" ? "Working…" : "Improve phrasing"}</Button>
-        <Button size="sm" variant="outline" disabled={!!busy} onClick={() => runAssist("reformat")}><LayoutList /> {busy === "reformat" ? "Working…" : "Interview format"}</Button>
-        <Button size="sm" variant="outline" disabled={!!busy} onClick={() => runAssist("hints")}><Lightbulb /> {busy === "hints" ? "Working…" : "Suggest hints & complexity"}</Button>
-      </div>
 
       <div className="grid flex-1 lg:grid-cols-2">
         <div className="space-y-5 border-r p-6">
@@ -194,14 +154,6 @@ function QuestionEditor() {
       </div>
 
       {startMode && <StartSessionDialog mode={startMode} onClose={() => setStartMode(null)} userId={user.id} questions={[]} initialQuestion={q} />}
-      <Dialog open={pasteOpen} onOpenChange={setPasteOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader><DialogTitle>Import a problem</DialogTitle></DialogHeader>
-          <p className="text-sm text-muted-foreground">Paste the full problem text from LeetCode, HackerRank or anywhere. AI will turn it into a structured question with hints and tests.</p>
-          <Textarea className="min-h-64 font-mono text-xs" value={pasted} onChange={(e) => setPasted(e.target.value)} />
-          <Button disabled={!pasted.trim() || busy === "import"} onClick={() => runAssist("import")}>{busy === "import" ? "Parsing…" : "Parse problem"}</Button>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
