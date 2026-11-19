@@ -27,6 +27,8 @@ import { SubmissionTests } from "@/components/SubmissionTests";
 import { savedSubmissionSchema } from "@/lib/submission";
 import type { TestCase } from "@/lib/types";
 import { initialRoomTimer, interviewName } from "@/lib/room-settings";
+import { SoloHints } from "@/components/SoloHints";
+import { showsProgressiveHints } from "@/lib/hints";
 
 const CollabEditor = lazy(() => import("@/components/CollabEditor"));
 
@@ -258,7 +260,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
         <ResizablePanel defaultSize="40%" minSize="20%">
           <div className="h-full space-y-6 overflow-y-auto p-6">
             <QuestionView q={question} />
-            {hasHints && (
+            {s.mode === "mock" && hasHints && (
               <div className="rounded-lg border bg-panel p-4">
                 <div className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2 font-display font-semibold"><Lightbulb className="h-4 w-4 text-accent" /> Hints</span>
@@ -279,6 +281,7 @@ function Room({ s, myName, userId, guestRole }: { s: SessionRow; myName: string;
                 )}
               </div>
             )}
+            {showsProgressiveHints(s.mode) && <SoloHints hints={question.hints} complexity={question.complexity} />}
             {s.mode === "mock" && <InterviewFeedback sessionId={s.id} userId={userId} canPost={canPostFeedback(s.mode, isHost)} />}
             {!runOnly && <SubmissionTests tests={addedTests} onChange={setAddedTests} disabled={spectator || running} />}
           </div>

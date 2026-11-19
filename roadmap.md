@@ -28,3 +28,5 @@
 - [x] Parsing: parameterized Python starter function and matching stdin/output wrapper
 - [x] Mock rooms: whiteboard-style code with Run only, no submissions or AI reviews
 - [x] Sign out: place account sign-out inside a profile menu
+- [ ] Solo practice room: progressive Hints panel below the description, one line per reveal
+- [ ] Session start window: remove "Paste & AI" and "AI Reformat" AI options

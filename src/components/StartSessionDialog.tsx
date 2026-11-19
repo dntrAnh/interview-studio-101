@@ -1,9 +1,7 @@
 import { lazy, Suspense, useState } from "react";
 import { useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
-import { useServerFn } from "@tanstack/react-start";
 import { toast } from "sonner";
-import { ClipboardPaste, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -13,9 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { QuestionView } from "./QuestionView";
 import { supabase } from "@/integrations/supabase/client";
-import { assistQuestion } from "@/lib/ai.functions";
 import { emptyQuestion, type QuestionData } from "@/lib/types";
-import { importedQuestion } from "@/lib/question-patch";
 import { Input } from "@/components/ui/input";
 import { useIsDark } from "@/lib/theme";
 import { interviewName } from "@/lib/room-settings";
@@ -27,37 +23,23 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
 }) {
   const navigate = useNavigate();
   const qc = useQueryClient();
-  const assist = useServerFn(assistQuestion);
   const dark = useIsDark();
   const [source, setSource] = useState("bank");
   const [roomName, setRoomName] = useState("");
   const [questionId, setQuestionId] = useState("blank");
-  const [pasted, setPasted] = useState("");
   const [freeText, setFreeText] = useState("");
   const [freeTitle, setFreeTitle] = useState("");
   const [freeFormat, setFreeFormat] = useState("markdown");
-  const [parsed, setParsed] = useState<QuestionData | null>(null);
   const [saveBank, setSaveBank] = useState(true);
   const [savedId, setSavedId] = useState<string | null>(null);
-  const [busy, setBusy] = useState<"parse" | "create" | null>(null);
-  async function parse() {
-    setBusy("parse");
-    try {
-      const res = await assist({ data: { action: "import", question: emptyQuestion(), pasted: source === "free" ? freeText : pasted } });
-      if (!res.ok) { toast.error(res.error); return; }
-      const q = importedQuestion(res.patch);
-      if (!q.description.trim()) { toast.error("No question found. Paste the full problem and try again."); return; }
-      setParsed(q); setSavedId(null);
-    } catch { toast.error("Could not format the question. Please try again."); }
-    finally { setBusy(null); }
-  }
+  const [busy, setBusy] = useState<"create" | null>(null);
   async function create() {
     const freeform = { ...emptyQuestion(), title: freeTitle || "Freeform session", description: freeFormat === "code" ? `\`\`\`\n${freeText}\n\`\`\`` : freeText };
-    const question = initialQuestion ?? (source === "paste" ? parsed : source === "free" || questionId === "blank" ? parsed ?? freeform : questions.find(q => q.id === questionId)?.question);
+    const question = initialQuestion ?? (source === "free" || questionId === "blank" ? freeform : questions.find(q => q.id === questionId)?.question);
     if (!question) return;
     setBusy("create");
     try {
-      if (!initialQuestion && (source === "paste" || source === "free") && saveBank && !savedId && question.description.trim()) {
+      if (!initialQuestion && (source === "free" || questionId === "blank") && saveBank && !savedId && question.description.trim()) {
         const { data, error } = await supabase.from("questions").insert({ ...question, owner_id: userId }).select("id").single();
         if (error) throw error;
         setSavedId(data.id);
@@ -76,8 +58,8 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
       <DialogHeader className="shrink-0 border-b px-6 py-5 pr-12"><DialogTitle>{mode === "solo" ? "Practice solo" : "Start a mock interview"}</DialogTitle></DialogHeader>
       <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain px-6 pb-4">
       {mode === "mock" && <div className="space-y-2 py-4"><Label htmlFor="interview-name">Interview name</Label><Input id="interview-name" value={roomName} onChange={e => setRoomName(e.target.value)} maxLength={120} placeholder="Mock interview" /></div>}
-      {initialQuestion ? <QuestionView q={initialQuestion} /> : <Tabs value={source} onValueChange={v => { setSource(v); setParsed(null); setSavedId(null); }}>
-        <TabsList className="flex h-auto w-full flex-wrap"><TabsTrigger value="bank">Question bank</TabsTrigger><TabsTrigger value="free">Freeform</TabsTrigger><TabsTrigger value="paste"><ClipboardPaste /> Paste & AI</TabsTrigger></TabsList>
+      {initialQuestion ? <QuestionView q={initialQuestion} /> : <Tabs value={source} onValueChange={v => { setSource(v); setSavedId(null); }}>
+        <TabsList className="flex h-auto w-full flex-wrap"><TabsTrigger value="bank">Question bank</TabsTrigger><TabsTrigger value="free">Freeform</TabsTrigger></TabsList>
         <TabsContent value="bank" className="space-y-2">
           <Label>Question</Label><Select value={questionId} onValueChange={setQuestionId}><SelectTrigger><SelectValue /></SelectTrigger><SelectContent>
             <SelectItem value="blank">No question (freeform)</SelectItem>{questions.map(q => <SelectItem key={q.id} value={q.id}>{q.question.title}</SelectItem>)}
@@ -86,22 +68,13 @@ export function StartSessionDialog({ mode, onClose, userId, questions, initialQu
         </TabsContent>
         <TabsContent value="free" className="space-y-4">
           <Label htmlFor="free-title">Title</Label><Input id="free-title" value={freeTitle} onChange={e => setFreeTitle(e.target.value)} />
-          <Tabs value={freeFormat} onValueChange={v => { setFreeFormat(v); setParsed(null); }}><TabsList><TabsTrigger value="markdown">Markdown</TabsTrigger><TabsTrigger value="code">Code editor</TabsTrigger></TabsList></Tabs>
-          <Label htmlFor="free-question">Question</Label>{freeFormat === "code" ? <Suspense fallback={<p className="text-muted-foreground">Loading editor…</p>}><QuestionTextEditor value={freeText} dark={dark} onChange={v => { setFreeText(v); setParsed(null); setSavedId(null); }} /></Suspense> : <Textarea id="free-question" className="min-h-48 font-mono text-sm" spellCheck={false} value={freeText} onChange={e => { setFreeText(e.target.value); setParsed(null); setSavedId(null); }} />}
-          <Button variant="outline" disabled={!!busy || !freeText.trim()} onClick={parse}><Sparkles />{busy === "parse" ? "Formatting…" : "AI Reformat"}</Button>
-          {parsed && <QuestionView q={parsed} />}
+          <Tabs value={freeFormat} onValueChange={setFreeFormat}><TabsList><TabsTrigger value="markdown">Markdown</TabsTrigger><TabsTrigger value="code">Code editor</TabsTrigger></TabsList></Tabs>
+          <Label htmlFor="free-question">Question</Label>{freeFormat === "code" ? <Suspense fallback={<p className="text-muted-foreground">Loading editor…</p>}><QuestionTextEditor value={freeText} dark={dark} onChange={v => { setFreeText(v); setSavedId(null); }} /></Suspense> : <Textarea id="free-question" className="min-h-48 font-mono text-sm" spellCheck={false} value={freeText} onChange={e => { setFreeText(e.target.value); setSavedId(null); }} />}
           <div className="flex items-center gap-2"><Checkbox id="free-save-bank" checked={saveBank} onCheckedChange={v => setSaveBank(v === true)} /><Label htmlFor="free-save-bank">Save to my question bank</Label></div>
-        </TabsContent>
-        <TabsContent value="paste" className="space-y-4">
-          <Label htmlFor="session-paste">Paste from LeetCode / HackerRank</Label>
-          <Textarea id="session-paste" className="min-h-40 font-mono text-xs" value={pasted} onChange={e => { setPasted(e.target.value); setParsed(null); setSavedId(null); }} disabled={!!busy} />
-          <Button variant="outline" disabled={!!busy || !pasted.trim()} onClick={parse}><Sparkles />{busy === "parse" ? "Formatting…" : "Parse & Reformat"}</Button>
-          {parsed && <div className="space-y-2 border-t pt-4"><QuestionView q={parsed} /><p className="font-mono text-xs text-muted-foreground">{parsed.test_cases.length} test cases</p></div>}
-          <div className="flex items-center gap-2"><Checkbox id="save-bank" checked={saveBank} onCheckedChange={v => setSaveBank(v === true)} /><Label htmlFor="save-bank">Save to my question bank</Label></div>
         </TabsContent>
       </Tabs>}
       </div>
-      <div className="shrink-0 border-t px-6 py-4"><Button className="w-full" disabled={!!busy || (!initialQuestion && source === "paste" && !parsed)} onClick={create}>{busy === "create" ? "Opening…" : "Open room"}</Button></div>
+      <div className="shrink-0 border-t px-6 py-4"><Button className="w-full" disabled={!!busy} onClick={create}>{busy === "create" ? "Opening…" : "Open room"}</Button></div>
     </DialogContent>
   </Dialog>;
 }
